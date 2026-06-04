@@ -1,0 +1,199 @@
+package handlers
+
+import (
+	"log"
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+	"farmtag/db"
+	"farmtag/internal/models"
+)
+
+func CreateAnimal(c echo.Context) error {
+	userID := c.Get("user_id").(string)
+	log.Printf("[ANIMAL] CreateAnimal request — UserID: %s", userID)
+
+	req := new(models.CreateAnimalRequest)
+	if err := c.Bind(req); err != nil {
+		log.Printf("[ANIMAL] CreateAnimal bind error: %v", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	}
+
+	// Validate farm belongs to user
+	var farmCount int
+	err := db.DB.Get(&farmCount, "SELECT COUNT(*) FROM farms WHERE id=$1 AND user_id=$2", req.FarmID, userID)
+	if err != nil || farmCount == 0 {
+		log.Printf("[ANIMAL] CreateAnimal — farm not found FarmID: %s | UserID: %s", req.FarmID, userID)
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Farm not found"})
+	}
+
+	// Check free tier limit — max 10 animals
+	var user models.User
+	db.DB.Get(&user, "SELECT is_premium FROM users WHERE id=$1", userID)
+
+	if !user.IsPremium {
+		var animalCount int
+		db.DB.Get(&animalCount, `
+			SELECT COUNT(*) FROM animals a
+			JOIN farms f ON f.id = a.farm_id
+			WHERE f.user_id=$1 AND a.is_deleted=false
+		`, userID)
+
+		if animalCount >= 10 {
+			log.Printf("[ANIMAL] CreateAnimal blocked — free tier limit reached for UserID: %s", userID)
+			return c.JSON(http.StatusForbidden, map[string]string{"error": "Upgrade to premium to add more than 10 animals"})
+		}
+	}
+
+	// Check tag number uniqueness in farm
+	var tagCount int
+	db.DB.Get(&tagCount, "SELECT COUNT(*) FROM animals WHERE tag_number=$1 AND farm_id=$2 AND is_deleted=false", req.TagNumber, req.FarmID)
+	if tagCount > 0 {
+		log.Printf("[ANIMAL] CreateAnimal — duplicate tag number: %s", req.TagNumber)
+		return c.JSON(http.StatusConflict, map[string]string{"error": "Tag number already exists in this farm"})
+	}
+
+	// Insert animal
+	var animal models.Animal
+	query := `
+		INSERT INTO animals (farm_id, mother_id, tag_number, name, type, breed, gender, date_of_birth, photo_url)
+		VALUES ($1, NULLIF($2,''), $3, NULLIF($4,''), $5, NULLIF($6,''), $7, NULLIF($8,'')::DATE, NULLIF($9,''))
+		RETURNING id, farm_id, mother_id, tag_number, name, type, breed, gender, date_of_birth, photo_url, is_sold, is_deleted, created_at, updated_at
+	`
+	err = db.DB.QueryRowx(query,
+		req.FarmID, req.MotherID, req.TagNumber, req.Name,
+		req.Type, req.Breed, req.Gender, req.DateOfBirth, req.PhotoURL,
+	).StructScan(&animal)
+	if err != nil {
+		log.Printf("[ANIMAL] CreateAnimal insert error: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create animal"})
+	}
+
+	// If buying price provided, record purchase
+	if req.BuyingPrice > 0 {
+		_, err = db.DB.Exec(`
+			INSERT INTO animal_purchases (animal_id, bought_at, buying_price, bought_from)
+			VALUES ($1, COALESCE(NULLIF($2,'')::DATE, CURRENT_DATE), $3, NULLIF($4,''))
+		`, animal.ID, req.BoughtAt, req.BuyingPrice, req.BoughtFrom)
+		if err != nil {
+			log.Printf("[ANIMAL] CreateAnimal purchase record error: %v", err)
+		} else {
+			log.Printf("[ANIMAL] Purchase recorded — AnimalID: %s | Price: %.2f", animal.ID, req.BuyingPrice)
+		}
+	}
+
+	log.Printf("[ANIMAL] Animal created — ID: %s | Tag: %s | Type: %s | FarmID: %s", animal.ID, animal.TagNumber, animal.Type, animal.FarmID)
+	return c.JSON(http.StatusCreated, animal)
+}
+
+func GetAnimals(c echo.Context) error {
+	userID := c.Get("user_id").(string)
+	farmID := c.QueryParam("farm_id")
+	log.Printf("[ANIMAL] GetAnimals request — UserID: %s | FarmID: %s", userID, farmID)
+
+	var animals []models.Animal
+	var err error
+
+	if farmID != "" {
+		err = db.DB.Select(&animals, `
+			SELECT a.* FROM animals a
+			JOIN farms f ON f.id = a.farm_id
+			WHERE a.farm_id=$1 AND f.user_id=$2 AND a.is_deleted=false
+			ORDER BY a.created_at DESC
+		`, farmID, userID)
+	} else {
+		err = db.DB.Select(&animals, `
+			SELECT a.* FROM animals a
+			JOIN farms f ON f.id = a.farm_id
+			WHERE f.user_id=$1 AND a.is_deleted=false
+			ORDER BY a.created_at DESC
+		`, userID)
+	}
+
+	if err != nil {
+		log.Printf("[ANIMAL] GetAnimals query error: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch animals"})
+	}
+
+	log.Printf("[ANIMAL] GetAnimals returned %d animals for UserID: %s", len(animals), userID)
+	return c.JSON(http.StatusOK, animals)
+}
+
+func GetAnimal(c echo.Context) error {
+	userID := c.Get("user_id").(string)
+	animalID := c.Param("id")
+	log.Printf("[ANIMAL] GetAnimal request — AnimalID: %s | UserID: %s", animalID, userID)
+
+	var animal models.Animal
+	err := db.DB.Get(&animal, `
+		SELECT a.* FROM animals a
+		JOIN farms f ON f.id = a.farm_id
+		WHERE a.id=$1 AND f.user_id=$2 AND a.is_deleted=false
+	`, animalID, userID)
+	if err != nil {
+		log.Printf("[ANIMAL] GetAnimal not found — AnimalID: %s", animalID)
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Animal not found"})
+	}
+
+	log.Printf("[ANIMAL] GetAnimal found — AnimalID: %s | Tag: %s", animal.ID, animal.TagNumber)
+	return c.JSON(http.StatusOK, animal)
+}
+
+func UpdateAnimal(c echo.Context) error {
+	userID := c.Get("user_id").(string)
+	animalID := c.Param("id")
+	log.Printf("[ANIMAL] UpdateAnimal request — AnimalID: %s | UserID: %s", animalID, userID)
+
+	req := new(models.UpdateAnimalRequest)
+	if err := c.Bind(req); err != nil {
+		log.Printf("[ANIMAL] UpdateAnimal bind error: %v", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	}
+
+	var animal models.Animal
+	query := `
+		UPDATE animals SET
+			tag_number = COALESCE(NULLIF($1,''), tag_number),
+			name = COALESCE(NULLIF($2,''), name),
+			breed = COALESCE(NULLIF($3,''), breed),
+			photo_url = COALESCE(NULLIF($4,''), photo_url),
+			date_of_birth = COALESCE(NULLIF($5,'')::DATE, date_of_birth),
+			updated_at = CURRENT_TIMESTAMP
+		WHERE id=$6 AND is_deleted=false
+		RETURNING id, farm_id, mother_id, tag_number, name, type, breed, gender, date_of_birth, photo_url, is_sold, is_deleted, created_at, updated_at
+	`
+	err := db.DB.QueryRowx(query,
+		req.TagNumber, req.Name, req.Breed, req.PhotoURL, req.DateOfBirth, animalID,
+	).StructScan(&animal)
+	if err != nil {
+		log.Printf("[ANIMAL] UpdateAnimal error: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update animal"})
+	}
+
+	log.Printf("[ANIMAL] Animal updated — AnimalID: %s | Tag: %s", animal.ID, animal.TagNumber)
+	return c.JSON(http.StatusOK, animal)
+}
+
+func DeleteAnimal(c echo.Context) error {
+	userID := c.Get("user_id").(string)
+	animalID := c.Param("id")
+	log.Printf("[ANIMAL] DeleteAnimal request — AnimalID: %s | UserID: %s", animalID, userID)
+
+	result, err := db.DB.Exec(`
+		UPDATE animals SET is_deleted=true, updated_at=CURRENT_TIMESTAMP
+		WHERE id=$1 AND farm_id IN (SELECT id FROM farms WHERE user_id=$2)
+	`, animalID, userID)
+	if err != nil {
+		log.Printf("[ANIMAL] DeleteAnimal error: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to delete animal"})
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		log.Printf("[ANIMAL] DeleteAnimal — animal not found AnimalID: %s", animalID)
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Animal not found"})
+	}
+
+	log.Printf("[ANIMAL] Animal soft deleted — AnimalID: %s", animalID)
+	return c.JSON(http.StatusOK, map[string]string{"message": "Animal deleted successfully"})
+}
