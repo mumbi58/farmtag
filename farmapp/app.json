@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "FarmTag",
+    "slug": "farmtag",
+    "version": "1.0.0",
+    "scheme": "farmtag",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#2D5A27"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.afrisoft.farmtag"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2D5A27"
+      },
+      "package": "com.afrisoft.farmtag"
+    },
+    "plugins": [
+      "expo-router",
+      
+      "expo-font"
+    ]
+  }
+}
