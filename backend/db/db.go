@@ -5,9 +5,10 @@ import (
 	"log"
 	"os"
 
+	"farmtag/config"
+
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"farmtag/config"
 )
 
 var DB *sqlx.DB

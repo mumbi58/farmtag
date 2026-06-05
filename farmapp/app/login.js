@@ -34,7 +34,10 @@ export default function LoginPage() {
     try {
       await login(email, password);
     } catch (error) {
-      Alert.alert("Login failed", error?.response?.data?.message || error.message || "Please try again.");
+      Alert.alert(
+        "Login failed",
+        error?.response?.data?.message || error.message || "Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -61,7 +64,11 @@ export default function LoginPage() {
           secureTextEntry
           style={styles.input}
         />
-        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={submitting}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={handleLogin}
+          disabled={submitting}
+        >
           {submitting ? (
             <ActivityIndicator color={Colors.white} />
           ) : (
@@ -69,7 +76,10 @@ export default function LoginPage() {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.linkButton} onPress={() => router.push("/register")}> 
+        <TouchableOpacity
+          style={styles.linkButton}
+          onPress={() => router.push("/register")}
+        >
           <Text style={styles.linkText}>Don't have an account? Sign up</Text>
         </TouchableOpacity>
       </View>
