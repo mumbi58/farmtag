@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -31,6 +32,23 @@ func Connect() {
 	DB.SetMaxIdleConns(5)
 
 	log.Printf("[DB] Connected successfully — Host: %s | DB: %s", cfg.DBHost, cfg.DBName)
+
+	runMigrations()
+}
+
+func runMigrations() {
+	log.Println("[DB] Running migrations...")
+
+	content, err := os.ReadFile("migrations/001_init.sql")
+	if err != nil {
+		log.Fatalf("[DB] Failed to read migration file: %v", err)
+	}
+
+	if _, err := DB.Exec(string(content)); err != nil {
+		log.Fatalf("[DB] Failed to execute migrations: %v", err)
+	}
+
+	log.Println("[DB] ✓ Migrations successfully applied — schema initialized")
 }
 
 func Close() {

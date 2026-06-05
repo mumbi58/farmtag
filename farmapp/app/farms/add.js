@@ -1,7 +1,13 @@
 import { useState } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Alert, ActivityIndicator
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -20,10 +26,13 @@ export default function AddFarm() {
     }
     setLoading(true);
     try {
-      await api.post("/farms", { name: name.trim(), location: location.trim() });
+      await api.post("/farms", {
+        name: name.trim(),
+        location: location.trim(),
+      });
       console.log("[ADD FARM] Farm created successfully");
       Alert.alert("Success", "Farm added successfully!", [
-        { text: "OK", onPress: () => router.back() }
+        { text: "OK", onPress: () => router.back() },
       ]);
     } catch (e) {
       console.log("[ADD FARM] Error:", e.message);
@@ -45,7 +54,9 @@ export default function AddFarm() {
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Farm Details</Text>
 
-        <Text style={styles.label}>Farm Name <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>
+          Farm Name <Text style={styles.required}>*</Text>
+        </Text>
         <TextInput
           style={styles.input}
           placeholder="e.g. Green Valley Farm"
@@ -73,7 +84,11 @@ export default function AddFarm() {
           <ActivityIndicator color={Colors.white} />
         ) : (
           <>
-            <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={20}
+              color={Colors.white}
+            />
             <Text style={styles.submitBtnText}>Add Farm</Text>
           </>
         )}
@@ -85,37 +100,71 @@ export default function AddFarm() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 16, paddingBottom: 40 },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 20,
+  },
   backBtn: {
-    width: 38, height: 38, borderRadius: 12,
-    backgroundColor: Colors.white, justifyContent: "center",
-    alignItems: "center", shadowColor: "#000",
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: Colors.white,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 3, elevation: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   headerTitle: { fontSize: 22, fontWeight: "800", color: Colors.text },
   card: {
-    backgroundColor: Colors.white, borderRadius: 16,
-    padding: 16, marginBottom: 16,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sectionTitle: {
-    fontSize: 16, fontWeight: "700", color: Colors.text,
-    marginBottom: 16, paddingBottom: 10,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.text,
+    marginBottom: 16,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  label: { fontSize: 14, fontWeight: "600", color: Colors.text, marginBottom: 8 },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.text,
+    marginBottom: 8,
+  },
   required: { color: Colors.error },
   input: {
-    borderWidth: 1, borderColor: Colors.border, borderRadius: 12,
-    padding: 13, fontSize: 15, color: Colors.text,
-    backgroundColor: Colors.background, marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: 13,
+    fontSize: 15,
+    color: Colors.text,
+    backgroundColor: Colors.background,
+    marginBottom: 16,
   },
   submitBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    backgroundColor: Colors.primary, borderRadius: 14,
-    padding: 16, gap: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.primary,
+    borderRadius: 14,
+    padding: 16,
+    gap: 8,
   },
   submitBtnDisabled: { opacity: 0.7 },
   submitBtnText: { color: Colors.white, fontSize: 16, fontWeight: "700" },

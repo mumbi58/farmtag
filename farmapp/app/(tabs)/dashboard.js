@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, RefreshControl, ActivityIndicator
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -37,19 +42,32 @@ function UpcomingBirthCard({ item }) {
         <Text style={styles.birthEmoji}>🐄</Text>
         <View>
           <Text style={styles.birthTag}>{item.tag_number}</Text>
-          <Text style={styles.birthType}>{item.animal_type} • {item.farm_name}</Text>
+          <Text style={styles.birthType}>
+            {item.animal_type} • {item.farm_name}
+          </Text>
         </View>
       </View>
       <View style={styles.birthCardRight}>
         <Text style={styles.birthDate}>{item.expected_birth_at}</Text>
-        <View style={[
-          styles.birthBadge,
-          { backgroundColor: item.days_remaining <= 7 ? Colors.error + "20" : Colors.success + "20" }
-        ]}>
-          <Text style={[
-            styles.birthBadgeText,
-            { color: item.days_remaining <= 7 ? Colors.error : Colors.success }
-          ]}>
+        <View
+          style={[
+            styles.birthBadge,
+            {
+              backgroundColor:
+                item.days_remaining <= 7
+                  ? Colors.error + "20"
+                  : Colors.success + "20",
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.birthBadgeText,
+              {
+                color: item.days_remaining <= 7 ? Colors.error : Colors.success,
+              },
+            ]}
+          >
             {item.days_remaining}d left
           </Text>
         </View>
@@ -82,7 +100,9 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => { fetchDashboard(); }, []);
+  useEffect(() => {
+    fetchDashboard();
+  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -108,13 +128,21 @@ export default function Dashboard() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[Colors.primary]}
+        />
+      }
     >
       {/* Welcome Banner */}
       <View style={styles.welcomeBanner}>
         <View>
           <Text style={styles.welcomeText}>Welcome to FarmTag</Text>
-          <Text style={styles.welcomeSubText}>Manage your farm efficiently with real-time insights</Text>
+          <Text style={styles.welcomeSubText}>
+            Manage your farm efficiently with real-time insights
+          </Text>
         </View>
       </View>
 
@@ -150,19 +178,30 @@ export default function Dashboard() {
       </View>
 
       {/* Profit/Loss Card */}
-      <View style={[
-        styles.profitCard,
-        { borderLeftColor: (stats?.profit_loss ?? 0) >= 0 ? Colors.success : Colors.error }
-      ]}>
+      <View
+        style={[
+          styles.profitCard,
+          {
+            borderLeftColor:
+              (stats?.profit_loss ?? 0) >= 0 ? Colors.success : Colors.error,
+          },
+        ]}
+      >
         <Text style={styles.profitLabel}>Overall Profit / Loss</Text>
-        <Text style={[
-          styles.profitValue,
-          { color: (stats?.profit_loss ?? 0) >= 0 ? Colors.success : Colors.error }
-        ]}>
+        <Text
+          style={[
+            styles.profitValue,
+            {
+              color:
+                (stats?.profit_loss ?? 0) >= 0 ? Colors.success : Colors.error,
+            },
+          ]}
+        >
           {formatCurrency(stats?.profit_loss ?? 0)}
         </Text>
         <Text style={styles.profitSub}>
-          {stats?.animals_sold ?? 0} animals sold · {stats?.active_pregnancies ?? 0} active pregnancies
+          {stats?.animals_sold ?? 0} animals sold ·{" "}
+          {stats?.active_pregnancies ?? 0} active pregnancies
         </Text>
       </View>
 
@@ -181,10 +220,22 @@ export default function Dashboard() {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.quickActions}>
           {[
-            { label: "Add Animal", icon: "add-circle-outline", route: "/animals/add" },
+            {
+              label: "Add Animal",
+              icon: "add-circle-outline",
+              route: "/animals/add",
+            },
             { label: "Add Farm", icon: "leaf-outline", route: "/farms/add" },
-            { label: "Add Expense", icon: "receipt-outline", route: "/expenses/add" },
-            { label: "Record Birth", icon: "heart-outline", route: "/births/add" },
+            {
+              label: "Add Expense",
+              icon: "receipt-outline",
+              route: "/expenses/add",
+            },
+            {
+              label: "Record Birth",
+              icon: "heart-outline",
+              route: "/births/add",
+            },
           ].map((action) => (
             <TouchableOpacity
               key={action.label}
@@ -208,48 +259,84 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 32 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   welcomeBanner: {
-    backgroundColor: Colors.primary, borderRadius: 16,
-    padding: 20, marginBottom: 16,
+    backgroundColor: Colors.primary,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
   },
   welcomeText: { fontSize: 18, fontWeight: "800", color: Colors.white },
-  welcomeSubText: { fontSize: 13, color: "rgba(255,255,255,0.8)", marginTop: 4 },
+  welcomeSubText: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.8)",
+    marginTop: 4,
+  },
   statsGrid: {
-    flexDirection: "row", flexWrap: "wrap",
-    gap: 12, marginBottom: 16,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginBottom: 16,
   },
   statCard: {
-    backgroundColor: Colors.white, borderRadius: 16,
-    padding: 16, width: "47%",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 16,
+    width: "47%",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   statCardTop: {
-    flexDirection: "row", justifyContent: "space-between",
-    alignItems: "center", marginBottom: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
   },
   statIconBox: {
-    width: 40, height: 40, borderRadius: 12,
-    justifyContent: "center", alignItems: "center",
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
   statLabel: { fontSize: 12, color: Colors.textSecondary, marginBottom: 4 },
   statValue: { fontSize: 22, fontWeight: "800", color: Colors.text },
   profitCard: {
-    backgroundColor: Colors.white, borderRadius: 16,
-    padding: 20, marginBottom: 16, borderLeftWidth: 4,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   profitLabel: { fontSize: 13, color: Colors.textSecondary, marginBottom: 4 },
   profitValue: { fontSize: 28, fontWeight: "800", marginBottom: 4 },
   profitSub: { fontSize: 12, color: Colors.textLight },
   section: { marginBottom: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: Colors.text, marginBottom: 12 },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.text,
+    marginBottom: 12,
+  },
   birthCard: {
-    backgroundColor: Colors.white, borderRadius: 14,
-    padding: 14, marginBottom: 8, flexDirection: "row",
-    justifyContent: "space-between", alignItems: "center",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   birthCardLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   birthEmoji: { fontSize: 28 },
@@ -260,18 +347,35 @@ const styles = StyleSheet.create({
   birthBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   birthBadgeText: { fontSize: 11, fontWeight: "700" },
   quickActions: {
-    flexDirection: "row", flexWrap: "wrap", gap: 12,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
   },
   quickAction: {
-    backgroundColor: Colors.white, borderRadius: 14,
-    padding: 16, width: "47%", alignItems: "center", gap: 8,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    padding: 16,
+    width: "47%",
+    alignItems: "center",
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   quickActionIcon: {
-    width: 48, height: 48, borderRadius: 14,
+    width: 48,
+    height: 48,
+    borderRadius: 14,
     backgroundColor: Colors.green100,
-    justifyContent: "center", alignItems: "center",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  quickActionLabel: { fontSize: 13, fontWeight: "600", color: Colors.text, textAlign: "center" },
+  quickActionLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.text,
+    textAlign: "center",
+  },
 });

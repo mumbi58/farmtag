@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  ActivityIndicator, Alert
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
@@ -9,9 +14,14 @@ import { Colors } from "@/constants/colors";
 import api from "@/constants/api";
 
 const ANIMAL_EMOJIS = {
-  cow: "🐄", goat: "🐐", sheep: "🐑",
-  pig: "🐷", camel: "🐪", horse: "🐴",
-  chicken: "🐔", default: "🐾",
+  cow: "🐄",
+  goat: "🐐",
+  sheep: "🐑",
+  pig: "🐷",
+  camel: "🐪",
+  horse: "🐴",
+  chicken: "🐔",
+  default: "🐾",
 };
 
 function InfoRow({ label, value }) {
@@ -95,7 +105,8 @@ export default function AnimalDetail() {
     );
   }
 
-  const emoji = ANIMAL_EMOJIS[animal.type?.toLowerCase()] || ANIMAL_EMOJIS.default;
+  const emoji =
+    ANIMAL_EMOJIS[animal.type?.toLowerCase()] || ANIMAL_EMOJIS.default;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -105,17 +116,26 @@ export default function AnimalDetail() {
           <Ionicons name="arrow-back" size={22} color={Colors.text} />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <Text style={styles.headerTag}>{animal.tag_number} - {animal.name || "No name"}</Text>
-          <View style={[
-            styles.statusBadge,
-            { backgroundColor: animal.is_sold ? Colors.error : Colors.success }
-          ]}>
-            <Text style={styles.statusText}>{animal.is_sold ? "Sold" : "Active"}</Text>
+          <Text style={styles.headerTag}>
+            {animal.tag_number} - {animal.name || "No name"}
+          </Text>
+          <View
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor: animal.is_sold ? Colors.error : Colors.success,
+              },
+            ]}
+          >
+            <Text style={styles.statusText}>
+              {animal.is_sold ? "Sold" : "Active"}
+            </Text>
           </View>
         </View>
       </View>
       <Text style={styles.headerSub}>
-        {animal.breed || animal.type} • {animal.gender} • {animal.farm_name || ""}
+        {animal.breed || animal.type} • {animal.gender} •{" "}
+        {animal.farm_name || ""}
       </Text>
 
       {/* Animal Image */}
@@ -124,10 +144,28 @@ export default function AnimalDetail() {
       </View>
 
       {/* Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs}>
-        <TabButton label="Overview" active={activeTab === "overview"} onPress={() => setActiveTab("overview")} />
-        <TabButton label="Pregnancy" active={activeTab === "pregnancy"} onPress={() => setActiveTab("pregnancy")} count={pregnancies.length} />
-        <TabButton label="Health" active={activeTab === "health"} onPress={() => setActiveTab("health")} count={healthRecords.length} />
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabs}
+      >
+        <TabButton
+          label="Overview"
+          active={activeTab === "overview"}
+          onPress={() => setActiveTab("overview")}
+        />
+        <TabButton
+          label="Pregnancy"
+          active={activeTab === "pregnancy"}
+          onPress={() => setActiveTab("pregnancy")}
+          count={pregnancies.length}
+        />
+        <TabButton
+          label="Health"
+          active={activeTab === "health"}
+          onPress={() => setActiveTab("health")}
+          count={healthRecords.length}
+        />
       </ScrollView>
 
       {/* Overview Tab */}
@@ -136,7 +174,10 @@ export default function AnimalDetail() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Animal Details</Text>
             <View style={styles.infoGrid}>
-              <InfoRow label="Date of Birth" value={animal.date_of_birth?.split("T")[0]} />
+              <InfoRow
+                label="Date of Birth"
+                value={animal.date_of_birth?.split("T")[0]}
+              />
               <InfoRow label="Age" value={calculateAge(animal.date_of_birth)} />
               <InfoRow label="Type" value={animal.type} />
               <InfoRow label="Breed" value={animal.breed} />
@@ -149,20 +190,30 @@ export default function AnimalDetail() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Financial Summary</Text>
             <View style={styles.financialRow}>
-              <View style={[styles.financialCard, { borderColor: Colors.warning }]}>
+              <View
+                style={[styles.financialCard, { borderColor: Colors.warning }]}
+              >
                 <Text style={styles.financialCardLabel}>Buying Price</Text>
-                <Text style={[styles.financialCardValue, { color: Colors.warning }]}>
+                <Text
+                  style={[styles.financialCardValue, { color: Colors.warning }]}
+                >
                   {animal.buying_price
                     ? `KES ${Number(animal.buying_price).toLocaleString()}`
                     : "Not recorded"}
                 </Text>
                 {animal.bought_at && (
-                  <Text style={styles.financialCardDate}>{animal.bought_at?.split("T")[0]}</Text>
+                  <Text style={styles.financialCardDate}>
+                    {animal.bought_at?.split("T")[0]}
+                  </Text>
                 )}
               </View>
-              <View style={[styles.financialCard, { borderColor: Colors.success }]}>
+              <View
+                style={[styles.financialCard, { borderColor: Colors.success }]}
+              >
                 <Text style={styles.financialCardLabel}>Selling Price</Text>
-                <Text style={[styles.financialCardValue, { color: Colors.success }]}>
+                <Text
+                  style={[styles.financialCardValue, { color: Colors.success }]}
+                >
                   {animal.selling_price
                     ? `KES ${Number(animal.selling_price).toLocaleString()}`
                     : "Not Sold"}
@@ -184,7 +235,11 @@ export default function AnimalDetail() {
               style={styles.actionBtn}
               onPress={() => router.push(`/health/add?animal_id=${id}`)}
             >
-              <Ionicons name="medical-outline" size={20} color={Colors.primary} />
+              <Ionicons
+                name="medical-outline"
+                size={20}
+                color={Colors.primary}
+              />
               <Text style={styles.actionBtnText}>Health Record</Text>
             </TouchableOpacity>
           </View>
@@ -211,33 +266,57 @@ export default function AnimalDetail() {
               <View key={p.id} style={styles.recordCard}>
                 <View style={styles.recordRow}>
                   <Text style={styles.recordLabel}>Conceived</Text>
-                  <Text style={styles.recordValue}>{p.conceived_at?.split("T")[0]}</Text>
+                  <Text style={styles.recordValue}>
+                    {p.conceived_at?.split("T")[0]}
+                  </Text>
                 </View>
                 <View style={styles.recordRow}>
                   <Text style={styles.recordLabel}>Expected Birth</Text>
-                  <Text style={styles.recordValue}>{p.expected_birth_at?.split("T")[0]}</Text>
+                  <Text style={styles.recordValue}>
+                    {p.expected_birth_at?.split("T")[0]}
+                  </Text>
                 </View>
                 {p.actual_birth_at && (
                   <View style={styles.recordRow}>
                     <Text style={styles.recordLabel}>Actual Birth</Text>
-                    <Text style={styles.recordValue}>{p.actual_birth_at?.split("T")[0]}</Text>
+                    <Text style={styles.recordValue}>
+                      {p.actual_birth_at?.split("T")[0]}
+                    </Text>
                   </View>
                 )}
-                <View style={[
-                  styles.statusPill,
-                  { backgroundColor: p.status === "delivered" ? Colors.success + "20" : Colors.warning + "20" }
-                ]}>
-                  <Text style={[
-                    styles.statusPillText,
-                    { color: p.status === "delivered" ? Colors.success : Colors.warning }
-                  ]}>
+                <View
+                  style={[
+                    styles.statusPill,
+                    {
+                      backgroundColor:
+                        p.status === "delivered"
+                          ? Colors.success + "20"
+                          : Colors.warning + "20",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.statusPillText,
+                      {
+                        color:
+                          p.status === "delivered"
+                            ? Colors.success
+                            : Colors.warning,
+                      },
+                    ]}
+                  >
                     {p.status}
                   </Text>
                 </View>
                 {p.status === "pregnant" && (
                   <TouchableOpacity
                     style={styles.recordActionBtn}
-                    onPress={() => router.push(`/births/add?pregnancy_id=${p.id}&mother_id=${id}`)}
+                    onPress={() =>
+                      router.push(
+                        `/births/add?pregnancy_id=${p.id}&mother_id=${id}`,
+                      )
+                    }
                   >
                     <Text style={styles.recordActionBtnText}>Record Birth</Text>
                   </TouchableOpacity>
@@ -272,18 +351,29 @@ export default function AnimalDetail() {
                 </View>
                 <View style={styles.recordRow}>
                   <Text style={styles.recordLabel}>Date</Text>
-                  <Text style={styles.recordValue}>{h.done_at?.split("T")[0]}</Text>
+                  <Text style={styles.recordValue}>
+                    {h.done_at?.split("T")[0]}
+                  </Text>
                 </View>
                 <Text style={styles.recordDesc}>{h.description}</Text>
                 {h.cost && (
                   <View style={styles.recordRow}>
                     <Text style={styles.recordLabel}>Cost</Text>
-                    <Text style={styles.recordValue}>KES {Number(h.cost).toLocaleString()}</Text>
+                    <Text style={styles.recordValue}>
+                      KES {Number(h.cost).toLocaleString()}
+                    </Text>
                   </View>
                 )}
                 {h.next_due_at && (
-                  <View style={[styles.statusPill, { backgroundColor: Colors.info + "20" }]}>
-                    <Text style={[styles.statusPillText, { color: Colors.info }]}>
+                  <View
+                    style={[
+                      styles.statusPill,
+                      { backgroundColor: Colors.info + "20" },
+                    ]}
+                  >
+                    <Text
+                      style={[styles.statusPillText, { color: Colors.info }]}
+                    >
                       Next due: {h.next_due_at?.split("T")[0]}
                     </Text>
                   </View>
@@ -302,90 +392,171 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 40 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   errorText: { fontSize: 16, color: Colors.textSecondary },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 4 },
-  backBtn: {
-    width: 38, height: 38, borderRadius: 12,
-    backgroundColor: Colors.white, justifyContent: "center",
-    alignItems: "center", shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 3, elevation: 2,
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 4,
   },
-  headerInfo: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: Colors.white,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  headerInfo: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   headerTag: { fontSize: 18, fontWeight: "800", color: Colors.text },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   statusText: { color: Colors.white, fontSize: 11, fontWeight: "700" },
-  headerSub: { fontSize: 13, color: Colors.textSecondary, marginBottom: 16, marginLeft: 50 },
+  headerSub: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginBottom: 16,
+    marginLeft: 50,
+  },
   animalImageBox: {
-    backgroundColor: Colors.green100, borderRadius: 16,
-    height: 180, justifyContent: "center", alignItems: "center", marginBottom: 16,
+    backgroundColor: Colors.green100,
+    borderRadius: 16,
+    height: 180,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
   },
   animalEmoji: { fontSize: 80 },
   tabs: { marginBottom: 16 },
   tabBtn: {
-    paddingHorizontal: 16, paddingVertical: 8,
-    borderRadius: 20, backgroundColor: Colors.white,
-    marginRight: 8, borderWidth: 1, borderColor: Colors.border,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.white,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  tabBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  tabBtnActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
   tabBtnText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
   tabBtnTextActive: { color: Colors.white },
   card: {
-    backgroundColor: Colors.white, borderRadius: 16,
-    padding: 16, marginBottom: 14,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  cardTitle: { fontSize: 15, fontWeight: "700", color: Colors.text, marginBottom: 14 },
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: Colors.text,
+    marginBottom: 14,
+  },
   infoGrid: { gap: 0 },
   infoRow: {
-    flexDirection: "row", justifyContent: "space-between",
-    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   infoLabel: { fontSize: 13, color: Colors.textSecondary },
   infoValue: { fontSize: 13, fontWeight: "600", color: Colors.text },
   financialRow: { flexDirection: "row", gap: 12 },
   financialCard: {
-    flex: 1, borderWidth: 1, borderRadius: 12,
-    padding: 14, backgroundColor: Colors.background,
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    backgroundColor: Colors.background,
   },
-  financialCardLabel: { fontSize: 12, color: Colors.textSecondary, marginBottom: 6 },
+  financialCardLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginBottom: 6,
+  },
   financialCardValue: { fontSize: 16, fontWeight: "800" },
   financialCardDate: { fontSize: 11, color: Colors.textLight, marginTop: 4 },
   actionsRow: { flexDirection: "row", gap: 12, marginBottom: 14 },
   actionBtn: {
-    flex: 1, flexDirection: "row", alignItems: "center",
-    justifyContent: "center", gap: 6,
-    backgroundColor: Colors.white, borderRadius: 12,
-    padding: 14, borderWidth: 1, borderColor: Colors.primary,
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.primary,
   },
   actionBtnText: { fontSize: 13, fontWeight: "600", color: Colors.primary },
   addBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    backgroundColor: Colors.primary, borderRadius: 12,
-    padding: 12, gap: 6, marginBottom: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    padding: 12,
+    gap: 6,
+    marginBottom: 14,
   },
   addBtnText: { color: Colors.white, fontSize: 14, fontWeight: "700" },
   recordCard: {
-    backgroundColor: Colors.white, borderRadius: 14,
-    padding: 14, marginBottom: 10,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   recordRow: {
-    flexDirection: "row", justifyContent: "space-between",
-    paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: Colors.border,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   recordLabel: { fontSize: 13, color: Colors.textSecondary },
   recordValue: { fontSize: 13, fontWeight: "600", color: Colors.text },
   recordDesc: { fontSize: 13, color: Colors.text, marginVertical: 8 },
   statusPill: {
-    alignSelf: "flex-start", paddingHorizontal: 10,
-    paddingVertical: 4, borderRadius: 20, marginTop: 8,
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginTop: 8,
   },
-  statusPillText: { fontSize: 12, fontWeight: "700", textTransform: "capitalize" },
+  statusPillText: {
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "capitalize",
+  },
   recordActionBtn: {
-    marginTop: 10, backgroundColor: Colors.primary,
-    borderRadius: 10, padding: 10, alignItems: "center",
+    marginTop: 10,
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    padding: 10,
+    alignItems: "center",
   },
   recordActionBtnText: { color: Colors.white, fontSize: 13, fontWeight: "700" },
   empty: { alignItems: "center", paddingVertical: 40 },

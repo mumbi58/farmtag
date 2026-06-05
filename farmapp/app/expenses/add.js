@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Alert, ActivityIndicator
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -17,7 +23,7 @@ export default function AddExpense() {
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [expenseDate, setExpenseDate] = useState(
-    new Date().toISOString().split("T")[0]
+    new Date().toISOString().split("T")[0],
   );
   const [loading, setLoading] = useState(false);
 
@@ -51,7 +57,7 @@ export default function AddExpense() {
       });
       console.log("[ADD EXPENSE] Expense created successfully");
       Alert.alert("Success", "Expense recorded!", [
-        { text: "OK", onPress: () => router.back() }
+        { text: "OK", onPress: () => router.back() },
       ]);
     } catch (e) {
       console.log("[ADD EXPENSE] Error:", e.message);
@@ -74,15 +80,25 @@ export default function AddExpense() {
         <Text style={styles.sectionTitle}>Expense Details</Text>
 
         {/* Farm */}
-        <Text style={styles.label}>Farm <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>
+          Farm <Text style={styles.required}>*</Text>
+        </Text>
         <View style={styles.optionsRow}>
           {farms.map((farm) => (
             <TouchableOpacity
               key={farm.id}
-              style={[styles.optionChip, farmID === farm.id && styles.optionChipActive]}
+              style={[
+                styles.optionChip,
+                farmID === farm.id && styles.optionChipActive,
+              ]}
               onPress={() => setFarmID(farm.id)}
             >
-              <Text style={[styles.optionChipText, farmID === farm.id && styles.optionChipTextActive]}>
+              <Text
+                style={[
+                  styles.optionChipText,
+                  farmID === farm.id && styles.optionChipTextActive,
+                ]}
+              >
                 {farm.name}
               </Text>
             </TouchableOpacity>
@@ -90,15 +106,25 @@ export default function AddExpense() {
         </View>
 
         {/* Category */}
-        <Text style={styles.label}>Category <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>
+          Category <Text style={styles.required}>*</Text>
+        </Text>
         <View style={styles.optionsRow}>
           {CATEGORIES.map((cat) => (
             <TouchableOpacity
               key={cat}
-              style={[styles.optionChip, category === cat && styles.optionChipActive]}
+              style={[
+                styles.optionChip,
+                category === cat && styles.optionChipActive,
+              ]}
               onPress={() => setCategory(cat)}
             >
-              <Text style={[styles.optionChipText, category === cat && styles.optionChipTextActive]}>
+              <Text
+                style={[
+                  styles.optionChipText,
+                  category === cat && styles.optionChipTextActive,
+                ]}
+              >
                 {cat}
               </Text>
             </TouchableOpacity>
@@ -106,7 +132,9 @@ export default function AddExpense() {
         </View>
 
         {/* Amount */}
-        <Text style={styles.label}>Amount (KES) <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>
+          Amount (KES) <Text style={styles.required}>*</Text>
+        </Text>
         <TextInput
           style={styles.input}
           placeholder="e.g. 5000"
@@ -129,7 +157,9 @@ export default function AddExpense() {
         />
 
         {/* Date */}
-        <Text style={styles.label}>Date <Text style={styles.required}>*</Text></Text>
+        <Text style={styles.label}>
+          Date <Text style={styles.required}>*</Text>
+        </Text>
         <TextInput
           style={styles.input}
           placeholder="YYYY-MM-DD"
@@ -148,7 +178,11 @@ export default function AddExpense() {
           <ActivityIndicator color={Colors.white} />
         ) : (
           <>
-            <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={20}
+              color={Colors.white}
+            />
             <Text style={styles.submitBtnText}>Save Expense</Text>
           </>
         )}
@@ -160,47 +194,97 @@ export default function AddExpense() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 16, paddingBottom: 40 },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 20,
+  },
   backBtn: {
-    width: 38, height: 38, borderRadius: 12,
-    backgroundColor: Colors.white, justifyContent: "center",
-    alignItems: "center", shadowColor: "#000",
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: Colors.white,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 3, elevation: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   headerTitle: { fontSize: 22, fontWeight: "800", color: Colors.text },
   card: {
-    backgroundColor: Colors.white, borderRadius: 16,
-    padding: 16, marginBottom: 16,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sectionTitle: {
-    fontSize: 16, fontWeight: "700", color: Colors.text,
-    marginBottom: 16, paddingBottom: 10,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.text,
+    marginBottom: 16,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  label: { fontSize: 14, fontWeight: "600", color: Colors.text, marginBottom: 8, marginTop: 4 },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.text,
+    marginBottom: 8,
+    marginTop: 4,
+  },
   required: { color: Colors.error },
   input: {
-    borderWidth: 1, borderColor: Colors.border, borderRadius: 12,
-    padding: 13, fontSize: 15, color: Colors.text,
-    backgroundColor: Colors.background, marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: 13,
+    fontSize: 15,
+    color: Colors.text,
+    backgroundColor: Colors.background,
+    marginBottom: 16,
   },
   textArea: { height: 90, textAlignVertical: "top" },
-  optionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 16 },
-  optionChip: {
-    paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: 20, backgroundColor: Colors.background,
-    borderWidth: 1, borderColor: Colors.border,
+  optionsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
   },
-  optionChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  optionChipText: { fontSize: 13, color: Colors.textSecondary, fontWeight: "600" },
+  optionChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  optionChipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  optionChipText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: "600",
+  },
   optionChipTextActive: { color: Colors.white },
   submitBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    backgroundColor: Colors.primary, borderRadius: 14,
-    padding: 16, gap: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.primary,
+    borderRadius: 14,
+    padding: 16,
+    gap: 8,
   },
   submitBtnDisabled: { opacity: 0.7 },
   submitBtnText: { color: Colors.white, fontSize: 16, fontWeight: "700" },

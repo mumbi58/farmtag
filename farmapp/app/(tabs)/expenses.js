@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, ActivityIndicator
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -17,18 +22,28 @@ const CATEGORY_CONFIG = {
 };
 
 function ExpenseCategoryCard({ category, total, percentage }) {
-  const config = CATEGORY_CONFIG[category?.toLowerCase()] || CATEGORY_CONFIG.other;
+  const config =
+    CATEGORY_CONFIG[category?.toLowerCase()] || CATEGORY_CONFIG.other;
   return (
     <View style={styles.categoryCard}>
-      <View style={[styles.categoryIcon, { backgroundColor: config.color + "20" }]}>
+      <View
+        style={[styles.categoryIcon, { backgroundColor: config.color + "20" }]}
+      >
         <Text style={styles.categoryEmoji}>{config.emoji}</Text>
       </View>
       <View style={styles.categoryInfo}>
         <Text style={styles.categoryName}>{category}</Text>
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${percentage}%`, backgroundColor: config.color }]} />
+          <View
+            style={[
+              styles.progressFill,
+              { width: `${percentage}%`, backgroundColor: config.color },
+            ]}
+          />
         </View>
-        <Text style={styles.categoryPercent}>{percentage.toFixed(0)}% of total</Text>
+        <Text style={styles.categoryPercent}>
+          {percentage.toFixed(0)}% of total
+        </Text>
       </View>
       <Text style={[styles.categoryTotal, { color: config.color }]}>
         KES {Number(total).toLocaleString()}
@@ -38,16 +53,23 @@ function ExpenseCategoryCard({ category, total, percentage }) {
 }
 
 function ExpenseItem({ expense }) {
-  const config = CATEGORY_CONFIG[expense.category?.toLowerCase()] || CATEGORY_CONFIG.other;
+  const config =
+    CATEGORY_CONFIG[expense.category?.toLowerCase()] || CATEGORY_CONFIG.other;
   return (
     <View style={styles.expenseItem}>
-      <View style={[styles.expenseIcon, { backgroundColor: config.color + "20" }]}>
+      <View
+        style={[styles.expenseIcon, { backgroundColor: config.color + "20" }]}
+      >
         <Text>{config.emoji}</Text>
       </View>
       <View style={styles.expenseInfo}>
         <Text style={styles.expenseCategory}>{expense.category}</Text>
-        <Text style={styles.expenseDesc}>{expense.description || "No description"}</Text>
-        <Text style={styles.expenseDate}>{expense.expense_date?.split("T")[0]}</Text>
+        <Text style={styles.expenseDesc}>
+          {expense.description || "No description"}
+        </Text>
+        <Text style={styles.expenseDate}>
+          {expense.expense_date?.split("T")[0]}
+        </Text>
       </View>
       <Text style={[styles.expenseAmount, { color: config.color }]}>
         KES {Number(expense.amount).toLocaleString()}
@@ -80,7 +102,9 @@ export default function Expenses() {
     }
   };
 
-  useEffect(() => { fetchExpenses(); }, [period]);
+  useEffect(() => {
+    fetchExpenses();
+  }, [period]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -99,7 +123,13 @@ export default function Expenses() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[Colors.primary]}
+        />
+      }
     >
       {/* Title */}
       <View style={styles.titleRow}>
@@ -110,7 +140,10 @@ export default function Expenses() {
       </View>
 
       {/* Add Button */}
-      <TouchableOpacity style={styles.addButton} onPress={() => router.push("/expenses/add")}>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => router.push("/expenses/add")}
+      >
         <Ionicons name="add" size={20} color={Colors.white} />
         <Text style={styles.addButtonText}>Add Expense</Text>
       </TouchableOpacity>
@@ -123,7 +156,12 @@ export default function Expenses() {
             style={[styles.periodBtn, period === p && styles.periodBtnActive]}
             onPress={() => setPeriod(p)}
           >
-            <Text style={[styles.periodBtnText, period === p && styles.periodBtnTextActive]}>
+            <Text
+              style={[
+                styles.periodBtnText,
+                period === p && styles.periodBtnTextActive,
+              ]}
+            >
               {p.charAt(0).toUpperCase() + p.slice(1)}
             </Text>
           </TouchableOpacity>
@@ -172,9 +210,11 @@ export default function Expenses() {
             <Text style={styles.emptyText}>No expenses recorded</Text>
           </View>
         ) : (
-          expenses.slice(0, 10).map((expense) => (
-            <ExpenseItem key={expense.id} expense={expense} />
-          ))
+          expenses
+            .slice(0, 10)
+            .map((expense) => (
+              <ExpenseItem key={expense.id} expense={expense} />
+            ))
         )}
       </View>
     </ScrollView>
@@ -189,73 +229,141 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: "800", color: Colors.text },
   subtitle: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
   addButton: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    backgroundColor: Colors.primary, borderRadius: 14,
-    padding: 14, gap: 8, marginBottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.primary,
+    borderRadius: 14,
+    padding: 14,
+    gap: 8,
+    marginBottom: 16,
   },
   addButtonText: { color: Colors.white, fontSize: 15, fontWeight: "700" },
   periodToggle: {
-    flexDirection: "row", backgroundColor: Colors.white,
-    borderRadius: 12, padding: 4, marginBottom: 16,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
+    flexDirection: "row",
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  periodBtn: { flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 10 },
+  periodBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: "center",
+    borderRadius: 10,
+  },
   periodBtnActive: { backgroundColor: Colors.primary },
-  periodBtnText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
+  periodBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+  },
   periodBtnTextActive: { color: Colors.white },
   totalCard: {
-    backgroundColor: Colors.white, borderRadius: 16,
-    padding: 16, marginBottom: 16, flexDirection: "row",
-    justifyContent: "space-between", alignItems: "center",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   totalCardLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   totalIcon: {
-    width: 44, height: 44, borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: Colors.green100,
-    justifyContent: "center", alignItems: "center",
+    justifyContent: "center",
+    alignItems: "center",
   },
   totalLabel: { fontSize: 14, fontWeight: "600", color: Colors.text },
   totalPeriod: { fontSize: 12, color: Colors.textSecondary },
   totalValue: { fontSize: 22, fontWeight: "800", color: Colors.text },
   section: { marginBottom: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: Colors.text, marginBottom: 12 },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.text,
+    marginBottom: 12,
+  },
   categoryCard: {
-    backgroundColor: Colors.white, borderRadius: 14,
-    padding: 14, marginBottom: 10, flexDirection: "row",
-    alignItems: "center", gap: 12,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   categoryIcon: {
-    width: 44, height: 44, borderRadius: 12,
-    justifyContent: "center", alignItems: "center",
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
   categoryEmoji: { fontSize: 22 },
   categoryInfo: { flex: 1 },
-  categoryName: { fontSize: 14, fontWeight: "600", color: Colors.text, marginBottom: 6, textTransform: "capitalize" },
+  categoryName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.text,
+    marginBottom: 6,
+    textTransform: "capitalize",
+  },
   progressBar: {
-    height: 4, backgroundColor: Colors.border,
-    borderRadius: 2, marginBottom: 4,
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: 2,
+    marginBottom: 4,
   },
   progressFill: { height: 4, borderRadius: 2 },
   categoryPercent: { fontSize: 11, color: Colors.textLight },
   categoryTotal: { fontSize: 15, fontWeight: "800" },
   expenseItem: {
-    backgroundColor: Colors.white, borderRadius: 14,
-    padding: 14, marginBottom: 8, flexDirection: "row",
-    alignItems: "center", gap: 12,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04, shadowRadius: 2, elevation: 1,
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   expenseIcon: {
-    width: 40, height: 40, borderRadius: 12,
-    justifyContent: "center", alignItems: "center",
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
   },
   expenseInfo: { flex: 1 },
-  expenseCategory: { fontSize: 14, fontWeight: "700", color: Colors.text, textTransform: "capitalize" },
+  expenseCategory: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.text,
+    textTransform: "capitalize",
+  },
   expenseDesc: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
   expenseDate: { fontSize: 11, color: Colors.textLight, marginTop: 2 },
   expenseAmount: { fontSize: 15, fontWeight: "800" },

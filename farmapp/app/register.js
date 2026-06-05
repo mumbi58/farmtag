@@ -1,7 +1,13 @@
 import { useState } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity,
-  StyleSheet, ScrollView, Alert, ActivityIndicator
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "@/context/AuthContext";
@@ -22,9 +28,17 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      await register(name.trim(), email.trim().toLowerCase(), password, phone.trim());
+      await register(
+        name.trim(),
+        email.trim().toLowerCase(),
+        password,
+        phone.trim(),
+      );
     } catch (e) {
-      Alert.alert("Registration Failed", e.response?.data?.error || "Something went wrong");
+      Alert.alert(
+        "Registration Failed",
+        e.response?.data?.error || "Something went wrong",
+      );
     } finally {
       setLoading(false);
     }
@@ -96,9 +110,10 @@ export default function Register() {
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.push("/login")}>
           <Text style={styles.link}>
-            Already have an account? <Text style={styles.linkBold}>Sign In</Text>
+            Already have an account?{" "}
+            <Text style={styles.linkBold}>Sign In</Text>
           </Text>
         </TouchableOpacity>
       </View>
@@ -111,33 +126,64 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, padding: 24 },
   header: { alignItems: "center", paddingVertical: 40 },
   logoContainer: {
-    width: 72, height: 72, borderRadius: 20,
+    width: 72,
+    height: 72,
+    borderRadius: 20,
     backgroundColor: Colors.primary,
-    justifyContent: "center", alignItems: "center", marginBottom: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
   },
   logoText: { fontSize: 36 },
   appName: { fontSize: 28, fontWeight: "800", color: Colors.primary },
   tagline: { fontSize: 14, color: Colors.textSecondary, marginTop: 4 },
   form: {
-    backgroundColor: Colors.white, borderRadius: 20,
-    padding: 24, shadowColor: "#000",
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 24,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  title: { fontSize: 22, fontWeight: "700", color: Colors.text, marginBottom: 4 },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: Colors.text,
+    marginBottom: 4,
+  },
   subtitle: { fontSize: 14, color: Colors.textSecondary, marginBottom: 24 },
-  label: { fontSize: 14, fontWeight: "600", color: Colors.text, marginBottom: 6 },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.text,
+    marginBottom: 6,
+  },
   input: {
-    borderWidth: 1, borderColor: Colors.border, borderRadius: 12,
-    padding: 14, fontSize: 15, color: Colors.text,
-    backgroundColor: Colors.background, marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    color: Colors.text,
+    backgroundColor: Colors.background,
+    marginBottom: 16,
   },
   button: {
-    backgroundColor: Colors.primary, borderRadius: 12,
-    padding: 16, alignItems: "center", marginTop: 8,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: "center",
+    marginTop: 8,
   },
   buttonDisabled: { opacity: 0.7 },
   buttonText: { color: Colors.white, fontSize: 16, fontWeight: "700" },
-  link: { textAlign: "center", marginTop: 20, color: Colors.textSecondary, fontSize: 14 },
+  link: {
+    textAlign: "center",
+    marginTop: 20,
+    color: Colors.textSecondary,
+    fontSize: 14,
+  },
   linkBold: { color: Colors.primary, fontWeight: "700" },
 });

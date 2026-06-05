@@ -1,7 +1,14 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 
-export const BASE_URL = "http://YOUR_SERVER_IP:8080/api/v1";
+const appConfig = Constants.expoConfig || Constants.manifest || {};
+const apiHost =
+  appConfig.extra?.API_URL ||
+  process.env.EXPO_PUBLIC_API_URL ||
+  "http://102.0.6.213:8080";
+
+export const BASE_URL = `${apiHost}/api/v1`;
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -25,7 +32,7 @@ api.interceptors.response.use(
       await AsyncStorage.removeItem("user");
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

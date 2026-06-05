@@ -1,14 +1,29 @@
 import { useState, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Alert, ActivityIndicator
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
 import api from "@/constants/api";
 
-const ANIMAL_TYPES = ["Cow", "Goat", "Sheep", "Pig", "Camel", "Horse", "Chicken", "Other"];
+const ANIMAL_TYPES = [
+  "Cow",
+  "Goat",
+  "Sheep",
+  "Pig",
+  "Camel",
+  "Horse",
+  "Chicken",
+  "Other",
+];
 const GENDERS = ["Male", "Female"];
 
 function FormField({ label, required, children }) {
@@ -31,7 +46,12 @@ function SelectOptions({ options, value, onChange }) {
           style={[styles.optionChip, value === opt && styles.optionChipActive]}
           onPress={() => onChange(opt)}
         >
-          <Text style={[styles.optionChipText, value === opt && styles.optionChipTextActive]}>
+          <Text
+            style={[
+              styles.optionChipText,
+              value === opt && styles.optionChipTextActive,
+            ]}
+          >
             {opt}
           </Text>
         </TouchableOpacity>
@@ -89,7 +109,7 @@ export default function AddAnimal() {
       });
       console.log("[ADD ANIMAL] Animal created successfully");
       Alert.alert("Success", "Animal added successfully!", [
-        { text: "OK", onPress: () => router.back() }
+        { text: "OK", onPress: () => router.back() },
       ]);
     } catch (e) {
       console.log("[ADD ANIMAL] Error:", e.message);
@@ -118,10 +138,18 @@ export default function AddAnimal() {
             {farms.map((farm) => (
               <TouchableOpacity
                 key={farm.id}
-                style={[styles.optionChip, farmID === farm.id && styles.optionChipActive]}
+                style={[
+                  styles.optionChip,
+                  farmID === farm.id && styles.optionChipActive,
+                ]}
                 onPress={() => setFarmID(farm.id)}
               >
-                <Text style={[styles.optionChipText, farmID === farm.id && styles.optionChipTextActive]}>
+                <Text
+                  style={[
+                    styles.optionChipText,
+                    farmID === farm.id && styles.optionChipTextActive,
+                  ]}
+                >
                   {farm.name}
                 </Text>
               </TouchableOpacity>
@@ -154,7 +182,11 @@ export default function AddAnimal() {
 
         {/* Type */}
         <FormField label="Animal Type" required>
-          <SelectOptions options={ANIMAL_TYPES} value={type} onChange={setType} />
+          <SelectOptions
+            options={ANIMAL_TYPES}
+            value={type}
+            onChange={setType}
+          />
         </FormField>
 
         {/* Breed */}
@@ -170,7 +202,11 @@ export default function AddAnimal() {
 
         {/* Gender */}
         <FormField label="Gender" required>
-          <SelectOptions options={GENDERS} value={gender} onChange={setGender} />
+          <SelectOptions
+            options={GENDERS}
+            value={gender}
+            onChange={setGender}
+          />
         </FormField>
 
         {/* Date of Birth */}
@@ -231,7 +267,11 @@ export default function AddAnimal() {
           <ActivityIndicator color={Colors.white} />
         ) : (
           <>
-            <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={20}
+              color={Colors.white}
+            />
             <Text style={styles.submitBtnText}>Add Animal</Text>
           </>
         )}
@@ -244,49 +284,90 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 16, paddingBottom: 40 },
   header: {
-    flexDirection: "row", alignItems: "center",
-    gap: 12, marginBottom: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 20,
   },
   backBtn: {
-    width: 38, height: 38, borderRadius: 12,
-    backgroundColor: Colors.white, justifyContent: "center",
-    alignItems: "center", shadowColor: "#000",
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: Colors.white,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 3, elevation: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 2,
   },
   headerTitle: { fontSize: 22, fontWeight: "800", color: Colors.text },
   card: {
-    backgroundColor: Colors.white, borderRadius: 16,
-    padding: 16, marginBottom: 16,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sectionTitle: {
-    fontSize: 16, fontWeight: "700", color: Colors.text,
-    marginBottom: 16, paddingBottom: 10,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.text,
+    marginBottom: 16,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   field: { marginBottom: 16 },
-  label: { fontSize: 14, fontWeight: "600", color: Colors.text, marginBottom: 8 },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.text,
+    marginBottom: 8,
+  },
   required: { color: Colors.error },
   input: {
-    borderWidth: 1, borderColor: Colors.border, borderRadius: 12,
-    padding: 13, fontSize: 15, color: Colors.text,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    padding: 13,
+    fontSize: 15,
+    color: Colors.text,
     backgroundColor: Colors.background,
   },
   optionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   optionChip: {
-    paddingHorizontal: 14, paddingVertical: 8,
-    borderRadius: 20, backgroundColor: Colors.background,
-    borderWidth: 1, borderColor: Colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  optionChipActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  optionChipText: { fontSize: 13, color: Colors.textSecondary, fontWeight: "600" },
+  optionChipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  optionChipText: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: "600",
+  },
   optionChipTextActive: { color: Colors.white },
   submitBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    backgroundColor: Colors.primary, borderRadius: 14,
-    padding: 16, gap: 8, marginTop: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.primary,
+    borderRadius: 14,
+    padding: 16,
+    gap: 8,
+    marginTop: 4,
   },
   submitBtnDisabled: { opacity: 0.7 },
   submitBtnText: { color: Colors.white, fontSize: 16, fontWeight: "700" },

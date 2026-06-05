@@ -12,10 +12,6 @@
       "resizeMode": "contain",
       "backgroundColor": "#2D5A27"
     },
-    "ios": {
-      "supportsTablet": false,
-      "bundleIdentifier": "com.afrisoft.farmtag"
-    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -23,10 +19,13 @@
       },
       "package": "com.afrisoft.farmtag"
     },
-    "plugins": [
-      "expo-router",
-      
-      "expo-font"
-    ]
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.afrisoft.farmtag"
+    },
+    "extra": {
+  "API_URL": "http://192.168.100.136:8080"
+},
+    "plugins": ["expo-router"]
   }
 }

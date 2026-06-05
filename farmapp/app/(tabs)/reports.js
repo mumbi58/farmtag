@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import {
-  View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, RefreshControl, ActivityIndicator
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
@@ -32,8 +37,15 @@ function AnimalFinancialRow({ animal }) {
         <Text style={styles.animalName}>{animal.name || animal.type}</Text>
       </View>
       <View style={styles.animalRowRight}>
-        <Text style={styles.animalBuy}>Buy: KES {Number(animal.buying_price).toLocaleString()}</Text>
-        <Text style={[styles.animalProfit, { color: isProfit ? Colors.success : Colors.error }]}>
+        <Text style={styles.animalBuy}>
+          Buy: KES {Number(animal.buying_price).toLocaleString()}
+        </Text>
+        <Text
+          style={[
+            styles.animalProfit,
+            { color: isProfit ? Colors.success : Colors.error },
+          ]}
+        >
           {isProfit ? "+" : ""}KES {Number(profit).toLocaleString()}
         </Text>
       </View>
@@ -68,7 +80,9 @@ export default function Reports() {
     }
   };
 
-  useEffect(() => { fetchReports(); }, []);
+  useEffect(() => {
+    fetchReports();
+  }, []);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -94,7 +108,13 @@ export default function Reports() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[Colors.primary]}
+        />
+      }
     >
       <Text style={styles.title}>Reports</Text>
       <Text style={styles.subtitle}>Financial overview of your farms</Text>
@@ -107,7 +127,12 @@ export default function Reports() {
             style={[styles.tab, activeTab === tab && styles.tabActive]}
             onPress={() => setActiveTab(tab)}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === tab && styles.tabTextActive,
+              ]}
+            >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </Text>
           </TouchableOpacity>
@@ -135,7 +160,9 @@ export default function Reports() {
             title="Net Profit / Loss"
             value={formatCurrency(stats?.profit_loss)}
             subtitle="Earned minus invested"
-            color={(stats?.profit_loss || 0) >= 0 ? Colors.success : Colors.error}
+            color={
+              (stats?.profit_loss || 0) >= 0 ? Colors.success : Colors.error
+            }
             icon="stats-chart-outline"
           />
           <ReportCard
@@ -176,7 +203,8 @@ export default function Reports() {
       {activeTab === "expenses" && (
         <View>
           <Text style={styles.sectionTitle}>
-            Yearly Expenses — KES {Number(expenseSummary?.grand_total || 0).toLocaleString()}
+            Yearly Expenses — KES{" "}
+            {Number(expenseSummary?.grand_total || 0).toLocaleString()}
           </Text>
           {expenseSummary?.summary?.length === 0 ? (
             <View style={styles.empty}>
@@ -189,15 +217,24 @@ export default function Reports() {
                 <View style={styles.expenseRowLeft}>
                   <Text style={styles.expenseCat}>{item.category}</Text>
                   <View style={styles.expenseBar}>
-                    <View style={[
-                      styles.expenseBarFill,
-                      { width: `${item.percentage}%`, backgroundColor: Colors.primary }
-                    ]} />
+                    <View
+                      style={[
+                        styles.expenseBarFill,
+                        {
+                          width: `${item.percentage}%`,
+                          backgroundColor: Colors.primary,
+                        },
+                      ]}
+                    />
                   </View>
                 </View>
                 <View style={styles.expenseRowRight}>
-                  <Text style={styles.expenseTotal}>KES {Number(item.total).toLocaleString()}</Text>
-                  <Text style={styles.expensePercent}>{item.percentage?.toFixed(0)}%</Text>
+                  <Text style={styles.expenseTotal}>
+                    KES {Number(item.total).toLocaleString()}
+                  </Text>
+                  <Text style={styles.expensePercent}>
+                    {item.percentage?.toFixed(0)}%
+                  </Text>
                 </View>
               </View>
             ))
@@ -213,38 +250,75 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 32 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   title: { fontSize: 24, fontWeight: "800", color: Colors.text },
-  subtitle: { fontSize: 13, color: Colors.textSecondary, marginTop: 2, marginBottom: 16 },
+  subtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 2,
+    marginBottom: 16,
+  },
   tabToggle: {
-    flexDirection: "row", backgroundColor: Colors.white,
-    borderRadius: 12, padding: 4, marginBottom: 16,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
+    flexDirection: "row",
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   tab: { flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 10 },
   tabActive: { backgroundColor: Colors.primary },
   tabText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
   tabTextActive: { color: Colors.white },
   reportCard: {
-    backgroundColor: Colors.white, borderRadius: 14,
-    padding: 16, marginBottom: 12, borderLeftWidth: 4,
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  reportCardTop: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 },
+  reportCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 8,
+  },
   reportIcon: {
-    width: 36, height: 36, borderRadius: 10,
-    justifyContent: "center", alignItems: "center",
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
   },
   reportTitle: { fontSize: 14, fontWeight: "600", color: Colors.textSecondary },
   reportValue: { fontSize: 26, fontWeight: "800", marginBottom: 4 },
   reportSubtitle: { fontSize: 12, color: Colors.textLight },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: Colors.text, marginBottom: 12 },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.text,
+    marginBottom: 12,
+  },
   animalRow: {
-    backgroundColor: Colors.white, borderRadius: 12,
-    padding: 14, marginBottom: 8, flexDirection: "row",
-    justifyContent: "space-between", alignItems: "center",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04, shadowRadius: 2, elevation: 1,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   animalRowLeft: {},
   animalTag: { fontSize: 12, color: Colors.textSecondary, fontWeight: "600" },
@@ -253,14 +327,27 @@ const styles = StyleSheet.create({
   animalBuy: { fontSize: 12, color: Colors.textSecondary },
   animalProfit: { fontSize: 15, fontWeight: "800", marginTop: 2 },
   expenseRow: {
-    backgroundColor: Colors.white, borderRadius: 12,
-    padding: 14, marginBottom: 8, flexDirection: "row",
-    justifyContent: "space-between", alignItems: "center",
-    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04, shadowRadius: 2, elevation: 1,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   expenseRowLeft: { flex: 1, marginRight: 12 },
-  expenseCat: { fontSize: 14, fontWeight: "600", color: Colors.text, textTransform: "capitalize", marginBottom: 6 },
+  expenseCat: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.text,
+    textTransform: "capitalize",
+    marginBottom: 6,
+  },
   expenseBar: { height: 4, backgroundColor: Colors.border, borderRadius: 2 },
   expenseBarFill: { height: 4, borderRadius: 2 },
   expenseRowRight: { alignItems: "flex-end" },
