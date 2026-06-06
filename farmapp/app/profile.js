@@ -26,7 +26,9 @@ export default function Profile() {
     setLoading(true);
     try {
       await api.put("/profile", { name: name.trim(), phone: phone.trim() });
-      Alert.alert("Success", "Profile updated successfully!");
+      Alert.alert("Success", "Profile updated successfully!", [
+        { text: "OK", onPress: () => router.back() }
+      ]);
       console.log("[PROFILE] Profile updated");
     } catch (e) {
       console.log("[PROFILE] Update error:", e.message);

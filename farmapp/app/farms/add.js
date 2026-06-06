@@ -37,8 +37,20 @@ export default function AddFarm() {
       ]);
     } catch (e) {
       console.log("[ADD FARM] Error:", e.message);
-      Alert.alert("Error", e.response?.data?.error || "Failed to add farm");
-    } finally {
+      const errorMsg = e.response?.data?.error || "";
+      if (e.response?.status === 403 || errorMsg.toLowerCase().includes("premium")) {
+        Alert.alert(
+          "Premium Required",
+          "Upgrade to premium to create multiple farms.",
+          [
+            { text: "Not Now", style: "cancel" },
+            { text: "Upgrade", onPress: () => router.push("/premium") }
+          ]
+        );
+      } else {
+        Alert.alert("Error", errorMsg || "Failed to add farm");
+      }
+    }finally {
       setLoading(false);
     }
   };

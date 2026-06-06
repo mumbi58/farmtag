@@ -1,14 +1,19 @@
 import { useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Switch, Alert
+  TouchableOpacity, Switch, Alert, Linking
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
+import { BASE_URL } from "@/constants/api";
+import { useAuth } from "@/context/AuthContext";
+
+const HOST_URL = BASE_URL.replace("/api/v1", "");
 
 export default function Settings() {
+  const { logout } = useAuth();
   const [notifications, setNotifications] = useState(true);
   const [birthReminders, setBirthReminders] = useState(true);
   const [healthReminders, setHealthReminders] = useState(true);
@@ -86,35 +91,23 @@ export default function Settings() {
 
         {/* App */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>App</Text>
-          <LinkRow
-            icon="information-circle-outline"
-            label="About FarmTag"
-            subtitle="Version 1.0.0"
-            onPress={() => Alert.alert("FarmTag", "Version 1.0.0\nBuilt for Kenyan farmers 🇰🇪")}
-          />
+          <Text style={styles.sectionTitle}>Legal</Text>
           <LinkRow
             icon="document-text-outline"
             label="Privacy Policy"
             subtitle="How we handle your data"
-            onPress={() => Alert.alert("Privacy Policy", "Your data is private and secure.")}
+            onPress={() => Linking.openURL(`${HOST_URL}/privacy`)}
           />
           <LinkRow
             icon="shield-checkmark-outline"
             label="Terms of Service"
-            onPress={() => Alert.alert("Terms", "By using FarmTag you agree to our terms.")}
+            onPress={() => Linking.openURL(`${HOST_URL}/terms`)}
           />
         </View>
 
         {/* Support */}
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Support</Text>
-          <LinkRow
-            icon="help-circle-outline"
-            label="Help & FAQ"
-            subtitle="Get answers to common questions"
-            onPress={() => Alert.alert("Help", "Contact us at support@farmtag.app")}
-          />
           <LinkRow
             icon="mail-outline"
             label="Contact Support"
@@ -127,19 +120,39 @@ export default function Settings() {
         <View style={styles.card}>
           <Text style={[styles.sectionTitle, { color: Colors.error }]}>Danger Zone</Text>
           <LinkRow
-            icon="trash-outline"
+            icon="trash-bin-outline"
             label="Delete Account"
-            subtitle="Permanently delete your account and data"
+            subtitle="Permanently delete your account"
             onPress={() => Alert.alert(
               "Delete Account",
-              "Are you sure? This cannot be undone.",
+              "Are you sure? Provide your reason or confirm.",
               [
                 { text: "Cancel", style: "cancel" },
-                { text: "Delete", style: "destructive", onPress: () => console.log("[SETTINGS] Delete account requested") }
+                { 
+                  text: "Delete", 
+                  style: "destructive", 
+                  onPress: async () => {
+                    try {
+                      await fetch(`${BASE_URL}/profile`, { method: 'DELETE', headers: { Authorization: `Bearer ${await require('@react-native-async-storage/async-storage').default.getItem('token')}` } });
+                      Alert.alert("Deleted", "Your account has been deleted.", [
+                        { text: "OK", onPress: () => logout() }
+                      ]);
+                    } catch (e) {
+                      Alert.alert("Error", "Failed to delete account");
+                    }
+                  } 
+                }
               ]
             )}
             color={Colors.error}
             arrow={false}
+          />
+          <LinkRow
+             icon="link-outline"
+             label="Account Deletion Policy"
+             subtitle="Read our deletion procedures"
+             onPress={() => Linking.openURL(`${HOST_URL}/account-deletion`)}
+             color={Colors.error}
           />
         </View>
 

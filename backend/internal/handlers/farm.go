@@ -65,7 +65,7 @@ func GetFarms(c echo.Context) error {
 	log.Printf("[FARM] GetFarms request — UserID: %s", userID)
 
 	var farms []models.Farm
-	err := db.DB.Select(&farms, "SELECT * FROM farms WHERE user_id=$1 ORDER BY created_at DESC", userID)
+	err := db.DB.Select(&farms, "SELECT * FROM farms WHERE user_id=$1 AND is_active=true ORDER BY created_at DESC", userID)
 	if err != nil {
 		log.Printf("[FARM] GetFarms query error: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch farms"})
@@ -81,7 +81,7 @@ func GetFarm(c echo.Context) error {
 	log.Printf("[FARM] GetFarm request — FarmID: %s | UserID: %s", farmID, userID)
 
 	var farm models.Farm
-	err := db.DB.Get(&farm, "SELECT * FROM farms WHERE id=$1 AND user_id=$2", farmID, userID)
+	err := db.DB.Get(&farm, "SELECT * FROM farms WHERE id=$1 AND user_id=$2 AND is_active=true", farmID, userID)
 	if err != nil {
 		log.Printf("[FARM] GetFarm not found — FarmID: %s | UserID: %s", farmID, userID)
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Farm not found"})
@@ -123,7 +123,7 @@ func DeleteFarm(c echo.Context) error {
 	farmID := c.Param("id")
 	log.Printf("[FARM] DeleteFarm request — FarmID: %s | UserID: %s", farmID, userID)
 
-	result, err := db.DB.Exec("DELETE FROM farms WHERE id=$1 AND user_id=$2", farmID, userID)
+	result, err := db.DB.Exec("UPDATE farms SET is_active=false WHERE id=$1 AND user_id=$2", farmID, userID)
 	if err != nil {
 		log.Printf("[FARM] DeleteFarm error: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to delete farm"})

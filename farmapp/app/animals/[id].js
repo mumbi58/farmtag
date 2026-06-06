@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Modal,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -54,6 +56,9 @@ export default function AnimalDetail() {
   const [healthRecords, setHealthRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [sellModalVisible, setSellModalVisible] = useState(false);
+  const [sellingPrice, setSellingPrice] = useState("");
+  const [selling, setSelling] = useState(false);
 
   useEffect(() => {
     fetchAnimalData();
@@ -103,6 +108,25 @@ export default function AnimalDetail() {
     const animalId = Array.isArray(id) ? id[0] : id;
     console.log("[ANIMAL DETAIL] Record birth pressed — pregnancy_id:", pregnancyId, "mother_id:", animalId);
     router.push({ pathname: "/births/add", params: { pregnancy_id: pregnancyId, mother_id: animalId } });
+  };
+
+  const handleSellAnimal = async () => {
+    if (!sellingPrice) {
+      Alert.alert("Error", "Please enter a selling price.");
+      return;
+    }
+    setSelling(true);
+    try {
+      await api.post(`/animals/${id}/sell`, { selling_price: parseFloat(sellingPrice) });
+      setSellModalVisible(false);
+      setSellingPrice("");
+      fetchAnimalData();
+      Alert.alert("Success", "Animal sold successfully!");
+    } catch (e) {
+      Alert.alert("Error", e.response?.data?.error || "Failed to sell animal.");
+    } finally {
+      setSelling(false);
+    }
   };
 
   if (loading) {
@@ -195,6 +219,15 @@ export default function AnimalDetail() {
             </View>
 
             <View style={styles.actionsRow}>
+              {!animal.is_sold && (
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={() => setSellModalVisible(true)}
+                >
+                  <Ionicons name="cash-outline" size={20} color={Colors.success} />
+                  <Text style={[styles.actionBtnText, { color: Colors.success }]}>Sell Animal</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={styles.actionBtn}
                 onPress={() => router.push({ pathname: "/pregnancies/add", params: { animal_id: Array.isArray(id) ? id[0] : id } })}
@@ -324,6 +357,32 @@ export default function AnimalDetail() {
         )}
 
       </ScrollView>
+
+      {/* Sell Modal */}
+      <Modal visible={sellModalVisible} transparent animationType="slide">
+        <View style={styles.modalBackground}>
+          <View style={styles.sellModal}>
+            <Text style={styles.cardTitle}>Sell Animal</Text>
+            <Text style={styles.infoLabel}>Selling Price (KES)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 50000"
+              keyboardType="numeric"
+              value={sellingPrice}
+              onChangeText={setSellingPrice}
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setSellModalVisible(false)}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmSellBtn} onPress={handleSellAnimal} disabled={selling}>
+                {selling ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.confirmSellBtnText}>Confirm Sale</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -419,4 +478,12 @@ const styles = StyleSheet.create({
   empty: { alignItems: "center", paddingVertical: 40 },
   emptyEmoji: { fontSize: 40, marginBottom: 8 },
   emptyText: { fontSize: 15, color: Colors.textSecondary },
+  modalBackground: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
+  sellModal: { backgroundColor: Colors.white, width: "85%", borderRadius: 16, padding: 20 },
+  input: { borderWidth: 1, borderColor: Colors.border, borderRadius: 10, padding: 12, marginTop: 8, marginBottom: 16 },
+  modalActions: { flexDirection: "row", justifyContent: "flex-end", gap: 10 },
+  cancelBtn: { padding: 10, borderRadius: 10 },
+  cancelBtnText: { color: Colors.textSecondary, fontWeight: "600" },
+  confirmSellBtn: { backgroundColor: Colors.success, padding: 10, borderRadius: 10, minWidth: 100, alignItems: "center" },
+  confirmSellBtnText: { color: Colors.white, fontWeight: "700" },
 });

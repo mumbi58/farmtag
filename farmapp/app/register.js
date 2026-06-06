@@ -18,7 +18,7 @@ export default function Register() {
   const { register } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  // const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -33,7 +33,7 @@ export default function Register() {
         name.trim(),
         email.trim().toLowerCase(),
         password,
-        phone.trim(),
+        // phone.trim(),
       );
     } catch (e) {
       Alert.alert(
@@ -80,7 +80,7 @@ export default function Register() {
           placeholderTextColor={Colors.textLight}
         />
 
-        <Text style={styles.label}>Phone</Text>
+        {/* <Text style={styles.label}>Phone</Text>
         <TextInput
           style={styles.input}
           placeholder="0712345678"
@@ -88,7 +88,7 @@ export default function Register() {
           onChangeText={setPhone}
           keyboardType="phone-pad"
           placeholderTextColor={Colors.textLight}
-        />
+        /> */}
 
         <Text style={styles.label}>Password *</Text>
         <TextInput
@@ -143,9 +143,9 @@ const styles = StyleSheet.create({
   tagline: { fontSize: 14, color: Colors.textSecondary, marginTop: 4 },
   form: {
     backgroundColor: Colors.white,
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 24,
-    shadowColor: "#000",
+    shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 8,
@@ -165,13 +165,13 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 12,
-    padding: 14,
+    height: 52,
+    borderWidth: 0,
+    borderRadius: 14,
+    paddingHorizontal: 16,
     fontSize: 15,
     color: Colors.text,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.green100,
     marginBottom: 16,
   },
   button: {

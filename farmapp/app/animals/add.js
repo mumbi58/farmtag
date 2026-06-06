@@ -113,9 +113,21 @@ export default function AddAnimal() {
       Alert.alert("Success", "Animal added successfully!", [
         { text: "OK", onPress: () => router.back() },
       ]);
-    } catch (e) {
-      console.log("[ADD ANIMAL] Error:", e.message);
-      Alert.alert("Error", e.response?.data?.error || "Failed to add animal");
+   } catch (e) {
+      console.log("[ADD ANIMAL] Error:", e.response?.data || e.message);
+      const errorMsg = e.response?.data?.error || e.message || "Failed to add animal";
+      if (e.response?.status === 403 || errorMsg.toLowerCase().includes("premium")) {
+        Alert.alert(
+          "Upgrade Required 🐄",
+          "You've reached the free limit of 10 animals. Upgrade to premium for unlimited animals!",
+          [
+            { text: "Not Now", style: "cancel" },
+            { text: "Upgrade", onPress: () => router.push("/premium") }
+          ]
+        );
+      } else {
+        Alert.alert("Error Adding Animal", errorMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -135,11 +147,25 @@ export default function AddAnimal() {
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Basic Information</Text>
 
-        {/* Farm */}
-        <FormField label="Farm" required>
-          <View style={styles.optionsRow}>
-            {farms.map((farm) => (
-              <TouchableOpacity
+        {farms.length === 0 ? (
+          <View style={styles.noFarmsContainer}>
+            <Text style={styles.noFarmsEmoji}>🌾</Text>
+            <Text style={styles.noFarmsText}>No Farms Found</Text>
+            <Text style={styles.noFarmsSubText}>You need to register a farm before you can add any animals.</Text>
+            <TouchableOpacity 
+              style={styles.addFarmBtn}
+              onPress={() => router.push("/farms/add")}
+            >
+              <Text style={styles.addFarmBtnText}>Add Farm Now</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            {/* Farm */}
+            <FormField label="Farm" required>
+              <View style={styles.optionsRow}>
+                {farms.map((farm) => (
+                  <TouchableOpacity
                 key={farm.id}
                 style={[
                   styles.optionChip,
@@ -203,23 +229,25 @@ export default function AddAnimal() {
           />
         </FormField>
 
-        {/* Gender */}
-        <FormField label="Gender" required>
-          <SelectOptions
-            options={GENDERS}
-            value={gender}
-            onChange={setGender}
-          />
-        </FormField>
+            {/* Gender */}
+            <FormField label="Gender" required>
+              <SelectOptions
+                options={GENDERS}
+                value={gender}
+                onChange={setGender}
+              />
+            </FormField>
 
-        {/* Date of Birth */}
-        <FormField label="Date of Birth">
-          <DatePicker
-            value={dateOfBirth}
-            onChange={setDateOfBirth}
-            placeholder="Select date of birth"
-          />
-        </FormField>
+            {/* Date of Birth */}
+            <FormField label="Date of Birth">
+              <DatePicker
+                value={dateOfBirth}
+                onChange={setDateOfBirth}
+                placeholder="Select date of birth"
+              />
+            </FormField>
+          </>
+        )}
       </View>
 
       {/* Purchase Info */}
@@ -257,24 +285,26 @@ export default function AddAnimal() {
       </View>
 
       {/* Submit */}
-      <TouchableOpacity
-        style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
-        onPress={handleSubmit}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color={Colors.white} />
-        ) : (
-          <>
-            <Ionicons
-              name="checkmark-circle-outline"
-              size={20}
-              color={Colors.white}
-            />
-            <Text style={styles.submitBtnText}>Add Animal</Text>
-          </>
-        )}
-      </TouchableOpacity>
+      {farms.length > 0 && (
+        <TouchableOpacity
+          style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={Colors.white} />
+          ) : (
+            <>
+              <Ionicons
+                name="checkmark-circle-outline"
+                size={20}
+                color={Colors.white}
+              />
+              <Text style={styles.submitBtnText}>Add Animal</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
     </ScrollView>
     </SafeAreaView>
   );
@@ -372,4 +402,10 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.7 },
   submitBtnText: { color: Colors.white, fontSize: 16, fontWeight: "700" },
+  noFarmsContainer: { alignItems: 'center', paddingVertical: 32 },
+  noFarmsEmoji: { fontSize: 48, marginBottom: 12 },
+  noFarmsText: { fontSize: 18, fontWeight: '700', color: Colors.text, marginBottom: 8 },
+  noFarmsSubText: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', marginBottom: 20 },
+  addFarmBtn: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 10 },
+  addFarmBtnText: { color: Colors.white, fontWeight: '600', fontSize: 14 },
 });

@@ -9,6 +9,7 @@ type Farm struct {
 	Location  *string   `db:"location" json:"location"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	IsActive  bool      `db:"is_active" json:"is_active"`
 }
 
 type CreateFarmRequest struct {

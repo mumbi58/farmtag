@@ -34,12 +34,21 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login(email, password);
+      Alert.alert("Success", "User login successful");
     } catch (error) {
-      Alert.alert(
-        "Login failed",
-        error?.response?.data?.message || error.message || "Please try again.",
-      );
-    } finally {
+      const status = error?.response?.status;
+      let message = "Something went wrong. Please try again.";
+      if (status === 401) {
+        message = "Wrong email or password. Please try again.";
+      } else if (status === 404) {
+        message = "Account not found. Please check your email.";
+      } else if (status === 0 || error.message === "Network Error") {
+        message = "No internet connection. Please check your network.";
+      } else if (error?.response?.data?.error) {
+        message = error.response.data.error;
+      }
+      Alert.alert("Login Failed", message);
+    }finally {
       setSubmitting(false);
     }
   };
@@ -114,11 +123,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 14,
+    height: 52,
+    borderWidth: 0,
+    borderRadius: 14,
+    paddingHorizontal: 16,
     marginBottom: 16,
     color: Colors.text,
     backgroundColor: Colors.green100,

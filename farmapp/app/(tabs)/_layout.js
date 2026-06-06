@@ -6,16 +6,19 @@ import {
   View, Text, StyleSheet, TouchableOpacity,
   Modal, Pressable
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 
 function Header() {
   const { user, logout } = useAuth();
   const [menuVisible, setMenuVisible] = useState(false);
+  const insets = useSafeAreaInsets();
   const initials = user?.name?.split(" ").map((n) => n[0]).join("").toUpperCase() || "U";
 
   return (
-    <View style={styles.header}>
-      <View style={styles.headerLeft}>
+    <View style={[styles.headerWrapper, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
         <View style={styles.logoBox}>
           <Text style={styles.logoEmoji}>🌿</Text>
         </View>
@@ -63,6 +66,7 @@ function Header() {
           </View>
         </Pressable>
       </Modal>
+      </View>
     </View>
   );
 }
@@ -93,9 +97,12 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
+  headerWrapper: {
+    backgroundColor: Colors.primary,
+  },
   header: {
     backgroundColor: Colors.primary,
-    paddingTop: 48, paddingBottom: 12, paddingHorizontal: 16,
+    paddingTop: 12, paddingBottom: 12, paddingHorizontal: 16,
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
   },
   headerLeft: { flexDirection: "row", alignItems: "center", gap: 10 },

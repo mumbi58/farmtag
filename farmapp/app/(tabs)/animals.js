@@ -8,9 +8,10 @@ import {
   TextInput,
   RefreshControl,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Colors } from "@/constants/colors";
 import api from "@/constants/api";
 
@@ -76,8 +77,6 @@ export default function Animals() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("All Types");
-  const [statusFilter, setStatusFilter] = useState("All Status");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
 
@@ -97,9 +96,11 @@ export default function Animals() {
     }
   };
 
-  useEffect(() => {
-    fetchAnimals();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchAnimals();
+    }, [])
+  );
 
   useEffect(() => {
     let result = [...animals];
@@ -112,16 +113,9 @@ export default function Animals() {
           a.breed?.toLowerCase().includes(search.toLowerCase()),
       );
     }
-    if (typeFilter !== "All Types") {
-      result = result.filter(
-        (a) => a.type?.toLowerCase() === typeFilter.toLowerCase(),
-      );
-    }
-    if (statusFilter === "Active") result = result.filter((a) => !a.is_sold);
-    if (statusFilter === "Sold") result = result.filter((a) => a.is_sold);
     setFiltered(result);
     setPage(1);
-  }, [search, typeFilter, statusFilter, animals]);
+  }, [search, animals]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -160,7 +154,7 @@ export default function Animals() {
 
       {/* Filters */}
       <View style={styles.filtersBox}>
-        <View style={styles.searchRow}>
+        <View style={[styles.searchRow, { marginBottom: 0 }]}>
           <Ionicons name="search-outline" size={18} color={Colors.textLight} />
           <TextInput
             style={styles.searchInput}
@@ -169,55 +163,6 @@ export default function Animals() {
             onChangeText={setSearch}
             placeholderTextColor={Colors.textLight}
           />
-        </View>
-
-        <View style={styles.filterRow}>
-          <Ionicons
-            name="filter-outline"
-            size={16}
-            color={Colors.textSecondary}
-          />
-          {["All Types", "Cow", "Goat", "Sheep", "Pig", "Camel"].map((type) => (
-            <TouchableOpacity
-              key={type}
-              style={[
-                styles.filterChip,
-                typeFilter === type && styles.filterChipActive,
-              ]}
-              onPress={() => setTypeFilter(type)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  typeFilter === type && styles.filterChipTextActive,
-                ]}
-              >
-                {type}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={styles.filterRow}>
-          {["All Status", "Active", "Sold"].map((status) => (
-            <TouchableOpacity
-              key={status}
-              style={[
-                styles.filterChip,
-                statusFilter === status && styles.filterChipActive,
-              ]}
-              onPress={() => setStatusFilter(status)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  statusFilter === status && styles.filterChipTextActive,
-                ]}
-              >
-                {status}
-              </Text>
-            </TouchableOpacity>
-          ))}
         </View>
       </View>
 
@@ -338,26 +283,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   searchInput: { flex: 1, fontSize: 14, color: Colors.text },
-  filterRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginBottom: 6,
-  },
-  filterChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    backgroundColor: Colors.background,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  filterChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  filterChipText: { fontSize: 12, color: Colors.textSecondary },
-  filterChipTextActive: { color: Colors.white, fontWeight: "600" },
   list: { paddingHorizontal: 16, paddingBottom: 32 },
   card: {
     backgroundColor: Colors.white,

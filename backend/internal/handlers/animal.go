@@ -110,24 +110,22 @@ func GetAnimals(c echo.Context) error {
 	}
 	query += ` ORDER BY a.created_at DESC`
 
-	rows, err := db.DB.Queryx(query, args...)
+	type AnimalWithMeta struct {
+		models.Animal
+		FarmName    *string  `db:"farm_name" json:"farm_name"`
+		BuyingPrice *float64 `db:"buying_price" json:"buying_price"`
+		BoughtAt    *string  `db:"bought_at" json:"bought_at"`
+	}
+	var animals []AnimalWithMeta
+
+	err := db.DB.Select(&animals, query, args...)
 	if err != nil {
 		log.Printf("[ANIMAL] GetAnimals query error: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch animals"})
 	}
-	defer rows.Close()
 
-	var animals []map[string]interface{}
-	for rows.Next() {
-		row := make(map[string]interface{})
-		if err := rows.MapScan(row); err != nil {
-			log.Printf("[ANIMAL] GetAnimals scan error: %v", err)
-			continue
-		}
-		animals = append(animals, row)
-	}
 	if animals == nil {
-		animals = []map[string]interface{}{}
+		animals = []AnimalWithMeta{}
 	}
 
 	log.Printf("[ANIMAL] GetAnimals returned %d animals for UserID: %s", len(animals), userID)
@@ -230,4 +228,49 @@ func DeleteAnimal(c echo.Context) error {
 
 	log.Printf("[ANIMAL] Animal soft deleted — AnimalID: %s", animalID)
 	return c.JSON(http.StatusOK, map[string]string{"message": "Animal deleted successfully"})
+}
+
+type SellAnimalRequest struct {
+	SellingPrice float64 `json:"selling_price"`
+	SoldAt       string  `json:"sold_at"`
+}
+
+func SellAnimal(c echo.Context) error {
+	userID := c.Get("user_id").(string)
+	animalID := c.Param("id")
+	log.Printf("[ANIMAL] SellAnimal request — AnimalID: %s | UserID: %s", animalID, userID)
+
+	req := new(SellAnimalRequest)
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	}
+
+	var exists bool
+	err := db.DB.Get(&exists, `
+		SELECT EXISTS(
+			SELECT 1 FROM animals a 
+			JOIN farms f ON f.id = a.farm_id 
+			WHERE a.id=$1 AND f.user_id=$2 AND a.is_deleted=false AND a.is_sold=false
+		)
+	`, animalID, userID)
+	if err != nil || !exists {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Animal not found or already sold"})
+	}
+
+	_, err = db.DB.Exec(`
+		INSERT INTO animal_sales (animal_id, selling_price, sold_at)
+		VALUES ($1, $2, COALESCE(NULLIF($3,'')::DATE, CURRENT_DATE))
+	`, animalID, req.SellingPrice, req.SoldAt)
+	if err != nil {
+		log.Printf("[ANIMAL] SellAnimal record error: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to record sale"})
+	}
+
+	_, err = db.DB.Exec(`UPDATE animals SET is_sold=true, updated_at=CURRENT_TIMESTAMP WHERE id=$1`, animalID)
+	if err != nil {
+		log.Printf("[ANIMAL] SellAnimal update error: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update animal status"})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Animal sold successfully"})
 }

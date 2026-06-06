@@ -13,7 +13,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
-import { useAuth } from "@/context/AuthContext";
 import api from "@/constants/api";
 
 function FarmCard({ farm, onPress }) {
@@ -77,11 +76,9 @@ function FarmCard({ farm, onPress }) {
 }
 
 export default function Farms() {
-  const { user, logout } = useAuth();
   const [farms, setFarms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [menuVisible, setMenuVisible] = useState(false);
   const [totalAnimals, setTotalAnimals] = useState(0);
 
   const fetchFarms = async () => {
@@ -110,13 +107,6 @@ export default function Farms() {
     fetchFarms();
   }, []);
 
-  const initials =
-    user?.name
-      ?.split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase() || "U";
-
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -127,73 +117,6 @@ export default function Farms() {
 
   return (
     <View style={styles.container}>
-      {/* Top right user menu */}
-      <View style={styles.topBar}>
-        <View>
-          <Text style={styles.title}>My Farms</Text>
-          <Text style={styles.subtitle}>Manage multiple farm locations</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.avatar}
-          onPress={() => setMenuVisible(true)}
-        >
-          <Text style={styles.avatarText}>{initials}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* User Menu Modal */}
-      <Modal
-        transparent
-        visible={menuVisible}
-        animationType="fade"
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <Pressable
-          style={styles.modalOverlay}
-          onPress={() => setMenuVisible(false)}
-        >
-          <View style={styles.menuCard}>
-            <View style={styles.menuHeader}>
-              <Text style={styles.menuName}>{user?.name}</Text>
-              <Text style={styles.menuEmail}>{user?.email}</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuVisible(false);
-                router.push("/profile");
-              }}
-            >
-              <Ionicons name="person-outline" size={18} color={Colors.text} />
-              <Text style={styles.menuItemText}>Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuVisible(false);
-                router.push("/settings");
-              }}
-            >
-              <Ionicons name="settings-outline" size={18} color={Colors.text} />
-              <Text style={styles.menuItemText}>Settings</Text>
-            </TouchableOpacity>
-            <View style={styles.menuDivider} />
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuVisible(false);
-                logout();
-              }}
-            >
-              <Ionicons name="log-out-outline" size={18} color={Colors.error} />
-              <Text style={[styles.menuItemText, { color: Colors.error }]}>
-                Log out
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
-
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -254,25 +177,6 @@ export default function Farms() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  topBar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  title: { fontSize: 24, fontWeight: "800", color: Colors.text },
-  subtitle: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarText: { color: Colors.white, fontWeight: "800", fontSize: 15 },
   content: { padding: 16, paddingBottom: 32 },
   addButton: {
     flexDirection: "row",
@@ -347,39 +251,4 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 48, marginBottom: 12 },
   emptyText: { fontSize: 16, fontWeight: "700", color: Colors.text },
   emptySubText: { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: Colors.overlay,
-    justifyContent: "flex-start",
-    alignItems: "flex-end",
-    paddingTop: 100,
-    paddingRight: 16,
-  },
-  menuCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 8,
-    width: 220,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  menuHeader: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  menuName: { fontSize: 15, fontWeight: "700", color: Colors.text },
-  menuEmail: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 12,
-    borderRadius: 10,
-  },
-  menuItemText: { fontSize: 14, fontWeight: "600", color: Colors.text },
-  menuDivider: { height: 1, backgroundColor: Colors.border, marginVertical: 4 },
 });
