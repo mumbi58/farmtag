@@ -3,10 +3,12 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Alert, ActivityIndicator
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Colors } from "@/constants/colors";
 import api from "@/constants/api";
+import DatePicker from "@/constants/DatePicker";
 
 const RECORD_TYPES = ["Vaccination", "Treatment", "Vet Visit", "Deworming", "Other"];
 
@@ -62,11 +64,12 @@ export default function AddHealthRecord() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.text} />
-        </TouchableOpacity>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={22} color={Colors.text} />
+          </TouchableOpacity>
         <Text style={styles.headerTitle}>Health Record</Text>
       </View>
 
@@ -129,22 +132,18 @@ export default function AddHealthRecord() {
           placeholderTextColor={Colors.textLight}
         />
 
-        <Text style={styles.label}>Date Done <Text style={styles.required}>*</Text></Text>
-        <TextInput
-          style={styles.input}
-          placeholder="YYYY-MM-DD"
+        <DatePicker
+          label="Date Done"
           value={doneAt}
-          onChangeText={setDoneAt}
-          placeholderTextColor={Colors.textLight}
+          onChange={setDoneAt}
+          required
         />
 
-        <Text style={styles.label}>Next Due Date</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="YYYY-MM-DD (optional)"
+        <DatePicker
+          label="Next Due Date"
           value={nextDueAt}
-          onChangeText={setNextDueAt}
-          placeholderTextColor={Colors.textLight}
+          onChange={setNextDueAt}
+          placeholder="Select next due date (optional)"
         />
       </View>
 
@@ -163,10 +162,12 @@ export default function AddHealthRecord() {
         )}
       </TouchableOpacity>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: Colors.background },
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 16, paddingBottom: 40 },
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },

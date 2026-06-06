@@ -3,10 +3,12 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Alert, ActivityIndicator
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Colors } from "@/constants/colors";
 import api from "@/constants/api";
+import DatePicker from "@/constants/DatePicker";
 
 export default function AddPregnancy() {
   const { animal_id } = useLocalSearchParams();
@@ -55,9 +57,10 @@ export default function AddPregnancy() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Record Pregnancy</Text>
@@ -86,13 +89,12 @@ export default function AddPregnancy() {
           </>
         )}
 
-        <Text style={styles.label}>Date Conceived <Text style={styles.required}>*</Text></Text>
-        <TextInput
-          style={styles.input}
-          placeholder="YYYY-MM-DD"
+        <DatePicker
+          label="Date Conceived"
           value={concevedAt}
-          onChangeText={setConcevedAt}
-          placeholderTextColor={Colors.textLight}
+          onChange={setConcevedAt}
+          required
+          placeholder="Select conception date"
         />
 
         <View style={styles.infoBox}>
@@ -129,10 +131,12 @@ export default function AddPregnancy() {
         )}
       </TouchableOpacity>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: Colors.background },
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 16, paddingBottom: 40 },
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },

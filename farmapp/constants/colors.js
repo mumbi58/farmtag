@@ -13,6 +13,7 @@ export const Colors = {
   success: "#4CAF50",
   error: "#F44336",
   warning: "#FF9800",
+  info: "#2196F3",
   green100: "#E8F5E9",
   green200: "#C8E6C9",
   overlay: "rgba(0,0,0,0.5)",

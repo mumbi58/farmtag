@@ -57,7 +57,7 @@ func CreateAnimal(c echo.Context) error {
 	var animal models.Animal
 	query := `
 		INSERT INTO animals (farm_id, mother_id, tag_number, name, type, breed, gender, date_of_birth, photo_url)
-		VALUES ($1, NULLIF($2,''), $3, NULLIF($4,''), $5, NULLIF($6,''), $7, NULLIF($8,'')::DATE, NULLIF($9,''))
+		VALUES ($1, NULLIF($2,'')::UUID, $3, NULLIF($4,''), $5, NULLIF($6,''), $7, NULLIF($8,'')::DATE, NULLIF($9,''))
 		RETURNING id, farm_id, mother_id, tag_number, name, type, breed, gender, date_of_birth, photo_url, is_sold, is_deleted, created_at, updated_at
 	`
 	err = db.DB.QueryRowx(query,
@@ -91,28 +91,43 @@ func GetAnimals(c echo.Context) error {
 	farmID := c.QueryParam("farm_id")
 	log.Printf("[ANIMAL] GetAnimals request — UserID: %s | FarmID: %s", userID, farmID)
 
-	var animals []models.Animal
-	var err error
+	query := `
+		SELECT 
+			a.*,
+			f.name as farm_name,
+			ap.buying_price,
+			ap.bought_at::text as bought_at
+		FROM animals a
+		JOIN farms f ON f.id = a.farm_id
+		LEFT JOIN animal_purchases ap ON ap.animal_id = a.id
+		WHERE f.user_id=$1 AND a.is_deleted=false
+	`
+	args := []interface{}{userID}
 
 	if farmID != "" {
-		err = db.DB.Select(&animals, `
-			SELECT a.* FROM animals a
-			JOIN farms f ON f.id = a.farm_id
-			WHERE a.farm_id=$1 AND f.user_id=$2 AND a.is_deleted=false
-			ORDER BY a.created_at DESC
-		`, farmID, userID)
-	} else {
-		err = db.DB.Select(&animals, `
-			SELECT a.* FROM animals a
-			JOIN farms f ON f.id = a.farm_id
-			WHERE f.user_id=$1 AND a.is_deleted=false
-			ORDER BY a.created_at DESC
-		`, userID)
+		query += ` AND a.farm_id=$2`
+		args = append(args, farmID)
 	}
+	query += ` ORDER BY a.created_at DESC`
 
+	rows, err := db.DB.Queryx(query, args...)
 	if err != nil {
 		log.Printf("[ANIMAL] GetAnimals query error: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch animals"})
+	}
+	defer rows.Close()
+
+	var animals []map[string]interface{}
+	for rows.Next() {
+		row := make(map[string]interface{})
+		if err := rows.MapScan(row); err != nil {
+			log.Printf("[ANIMAL] GetAnimals scan error: %v", err)
+			continue
+		}
+		animals = append(animals, row)
+	}
+	if animals == nil {
+		animals = []map[string]interface{}{}
 	}
 
 	log.Printf("[ANIMAL] GetAnimals returned %d animals for UserID: %s", len(animals), userID)
@@ -124,14 +139,33 @@ func GetAnimal(c echo.Context) error {
 	animalID := c.Param("id")
 	log.Printf("[ANIMAL] GetAnimal request — AnimalID: %s | UserID: %s", animalID, userID)
 
-	var animal models.Animal
-	err := db.DB.Get(&animal, `
-		SELECT a.* FROM animals a
+	var animal struct {
+		models.Animal
+		FarmName    *string  `db:"farm_name" json:"farm_name"`
+		BuyingPrice *float64 `db:"buying_price" json:"buying_price"`
+		BoughtAt    *string  `db:"bought_at" json:"bought_at"`
+		BoughtFrom  *string  `db:"bought_from" json:"bought_from"`
+		SellingPrice *float64 `db:"selling_price" json:"selling_price"`
+		SoldAt      *string  `db:"sold_at" json:"sold_at"`
+	}
+
+	err := db.DB.QueryRowx(`
+		SELECT 
+			a.*,
+			f.name as farm_name,
+			ap.buying_price,
+			ap.bought_at::text as bought_at,
+			ap.bought_from,
+			s.selling_price,
+			s.sold_at::text as sold_at
+		FROM animals a
 		JOIN farms f ON f.id = a.farm_id
+		LEFT JOIN animal_purchases ap ON ap.animal_id = a.id
+		LEFT JOIN animal_sales s ON s.animal_id = a.id
 		WHERE a.id=$1 AND f.user_id=$2 AND a.is_deleted=false
-	`, animalID, userID)
+	`, animalID, userID).StructScan(&animal)
 	if err != nil {
-		log.Printf("[ANIMAL] GetAnimal not found — AnimalID: %s", animalID)
+		log.Printf("[ANIMAL] GetAnimal not found — AnimalID: %s | Error: %v", animalID, err)
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Animal not found"})
 	}
 

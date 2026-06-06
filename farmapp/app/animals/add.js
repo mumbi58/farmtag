@@ -9,10 +9,12 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
 import api from "@/constants/api";
+import DatePicker from "@/constants/DatePicker";
 
 const ANIMAL_TYPES = [
   "Cow",
@@ -120,12 +122,13 @@ export default function AddAnimal() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.text} />
-        </TouchableOpacity>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={22} color={Colors.text} />
+          </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Animal</Text>
       </View>
 
@@ -211,12 +214,10 @@ export default function AddAnimal() {
 
         {/* Date of Birth */}
         <FormField label="Date of Birth">
-          <TextInput
-            style={styles.input}
-            placeholder="YYYY-MM-DD"
+          <DatePicker
             value={dateOfBirth}
-            onChangeText={setDateOfBirth}
-            placeholderTextColor={Colors.textLight}
+            onChange={setDateOfBirth}
+            placeholder="Select date of birth"
           />
         </FormField>
       </View>
@@ -247,12 +248,10 @@ export default function AddAnimal() {
         </FormField>
 
         <FormField label="Date Purchased">
-          <TextInput
-            style={styles.input}
-            placeholder="YYYY-MM-DD"
+          <DatePicker
             value={boughtAt}
-            onChangeText={setBoughtAt}
-            placeholderTextColor={Colors.textLight}
+            onChange={setBoughtAt}
+            placeholder="Select purchase date"
           />
         </FormField>
       </View>
@@ -277,10 +276,12 @@ export default function AddAnimal() {
         )}
       </TouchableOpacity>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: Colors.background },
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 16, paddingBottom: 40 },
   header: {

@@ -3,18 +3,66 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Alert, ActivityIndicator
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Colors } from "@/constants/colors";
 import api from "@/constants/api";
+import DatePicker from "@/constants/DatePicker";
 
 export default function AddBirth() {
-  const { pregnancy_id, mother_id } = useLocalSearchParams();
+  const { pregnancy_id: initialPregnancyId, mother_id: initialMotherId } = useLocalSearchParams();
+  const [pregnancyId, setPregnancyId] = useState(initialPregnancyId);
+  const [motherId, setMotherId] = useState(initialMotherId);
+
+  const [animals, setAnimals] = useState([]);
   const [birthDate, setBirthDate] = useState(new Date().toISOString().split("T")[0]);
   const [totalOffspring, setTotalOffspring] = useState("1");
   const [notes, setNotes] = useState("");
   const [offspring, setOffspring] = useState([{ tag_number: "", name: "", gender: "female" }]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!initialPregnancyId || !initialMotherId) {
+      fetchFemaleAnimals();
+    }
+  }, []);
+
+  const fetchFemaleAnimals = async () => {
+    try {
+      const res = await api.get("/animals");
+      const females = (res.data || []).filter((a) => a.gender === "female" && !a.is_sold);
+      setAnimals(females);
+    } catch (e) {
+      console.log("[ADD BIRTH] Fetch animals error:", e.message);
+    }
+  };
+
+  const handleSelectMother = async (id) => {
+    setMotherId(id);
+    setPregnancyId(null);
+    try {
+      setLoading(true);
+      const res = await api.get(`/pregnancies?animal_id=${id}&status=pregnant`);
+      if (res.data && res.data.length > 0) {
+        setPregnancyId(res.data[0].id);
+      } else {
+        Alert.alert(
+          "No Active Pregnancy",
+          "This animal doesn't have an active pregnancy recorded. You need to record a pregnancy first.",
+          [
+            { text: "Cancel", style: "cancel", onPress: () => setMotherId(null) },
+            { text: "Record Pregnancy", onPress: () => router.push({ pathname: "/pregnancies/add", params: { animal_id: id } }) }
+          ]
+        );
+        setMotherId(null);
+      }
+    } catch (e) {
+      console.log("[ADD BIRTH] Fetch pregnancies error:", e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const addOffspringField = () => {
     setOffspring([...offspring, { tag_number: "", name: "", gender: "female" }]);
@@ -31,7 +79,7 @@ export default function AddBirth() {
   };
 
   const handleSubmit = async () => {
-    if (!pregnancy_id || !mother_id || !birthDate) {
+    if (!pregnancyId || !motherId || !birthDate) {
       Alert.alert("Error", "Missing required information");
       return;
     }
@@ -39,8 +87,8 @@ export default function AddBirth() {
     setLoading(true);
     try {
       await api.post("/births", {
-        pregnancy_id,
-        mother_id,
+        pregnancy_id: pregnancyId,
+        mother_id: motherId,
         birth_date: birthDate,
         total_offspring: parseInt(totalOffspring) || 1,
         notes: notes.trim(),
@@ -59,132 +107,159 @@ export default function AddBirth() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Record Birth</Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Birth Details</Text>
-
-        <Text style={styles.label}>Birth Date <Text style={styles.required}>*</Text></Text>
-        <TextInput
-          style={styles.input}
-          placeholder="YYYY-MM-DD"
-          value={birthDate}
-          onChangeText={setBirthDate}
-          placeholderTextColor={Colors.textLight}
-        />
-
-        <Text style={styles.label}>Total Offspring</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="1"
-          value={totalOffspring}
-          onChangeText={setTotalOffspring}
-          keyboardType="numeric"
-          placeholderTextColor={Colors.textLight}
-        />
-
-        <Text style={styles.label}>Notes</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          placeholder="Any notes about the birth..."
-          value={notes}
-          onChangeText={setNotes}
-          multiline
-          numberOfLines={3}
-          placeholderTextColor={Colors.textLight}
-        />
-      </View>
-
-      {/* Offspring Details */}
-      <View style={styles.card}>
-        <View style={styles.cardTitleRow}>
-          <Text style={styles.sectionTitle}>Offspring Details</Text>
-          <TouchableOpacity style={styles.addOffspringBtn} onPress={addOffspringField}>
-            <Ionicons name="add" size={16} color={Colors.primary} />
-            <Text style={styles.addOffspringText}>Add</Text>
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={22} color={Colors.text} />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Record Birth</Text>
         </View>
 
-        <View style={styles.infoBox}>
-          <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
-          <Text style={styles.infoText}>
-            Each offspring will be automatically added to the animal registry
-          </Text>
-        </View>
-
-        {offspring.map((o, index) => (
-          <View key={index} style={styles.offspringCard}>
-            <View style={styles.offspringHeader}>
-              <Text style={styles.offspringTitle}>Offspring {index + 1}</Text>
-              {offspring.length > 1 && (
-                <TouchableOpacity onPress={() => removeOffspring(index)}>
-                  <Ionicons name="close-circle" size={20} color={Colors.error} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <Text style={styles.label}>Tag Number <Text style={styles.required}>*</Text></Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. KE-050"
-              value={o.tag_number}
-              onChangeText={(v) => updateOffspring(index, "tag_number", v)}
-              autoCapitalize="characters"
-              placeholderTextColor={Colors.textLight}
-            />
-
-            <Text style={styles.label}>Name (optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Calf-1"
-              value={o.name}
-              onChangeText={(v) => updateOffspring(index, "name", v)}
-              placeholderTextColor={Colors.textLight}
-            />
-
-            <Text style={styles.label}>Gender <Text style={styles.required}>*</Text></Text>
+        {/* Animal Selection (if no pregnancy context) */}
+        {!initialPregnancyId && !pregnancyId && (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Select Mother</Text>
+            <Text style={styles.label}>Choose animal giving birth <Text style={styles.required}>*</Text></Text>
             <View style={styles.optionsRow}>
-              {["male", "female"].map((g) => (
+              {animals.map((a) => (
                 <TouchableOpacity
-                  key={g}
-                  style={[styles.optionChip, o.gender === g && styles.optionChipActive]}
-                  onPress={() => updateOffspring(index, "gender", g)}
+                  key={a.id}
+                  style={[styles.optionChip, motherId === a.id && styles.optionChipActive]}
+                  onPress={() => handleSelectMother(a.id)}
                 >
-                  <Text style={[styles.optionChipText, o.gender === g && styles.optionChipTextActive]}>
-                    {g.charAt(0).toUpperCase() + g.slice(1)}
+                  <Text style={[styles.optionChipText, motherId === a.id && styles.optionChipTextActive]}>
+                    {a.tag_number} {a.name ? `- ${a.name}` : ""}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
           </View>
-        ))}
-      </View>
-
-      <TouchableOpacity
-        style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
-        onPress={handleSubmit}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color={Colors.white} />
-        ) : (
-          <>
-            <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
-            <Text style={styles.submitBtnText}>Record Birth</Text>
-          </>
         )}
-      </TouchableOpacity>
-    </ScrollView>
+
+        {/* Only show birth form if pregnancy context is resolved */}
+        {pregnancyId && motherId && (
+          <>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Birth Details</Text>
+
+              <DatePicker
+                label="Birth Date"
+                value={birthDate}
+                onChange={setBirthDate}
+                required
+              />
+
+              <Text style={styles.label}>Total Offspring</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="1"
+            value={totalOffspring}
+            onChangeText={setTotalOffspring}
+            keyboardType="numeric"
+            placeholderTextColor={Colors.textLight}
+          />
+
+          <Text style={styles.label}>Notes</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Any notes about the birth..."
+            value={notes}
+            onChangeText={setNotes}
+            multiline
+            numberOfLines={3}
+            placeholderTextColor={Colors.textLight}
+          />
+        </View>
+
+        {/* Offspring Details */}
+        <View style={styles.card}>
+          <View style={styles.cardTitleRow}>
+            <Text style={styles.sectionTitle}>Offspring Details</Text>
+            <TouchableOpacity style={styles.addOffspringBtn} onPress={addOffspringField}>
+              <Ionicons name="add" size={16} color={Colors.primary} />
+              <Text style={styles.addOffspringText}>Add</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.infoBox}>
+            <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
+            <Text style={styles.infoText}>
+              Each offspring will be automatically added to the animal registry
+            </Text>
+          </View>
+
+          {offspring.map((o, index) => (
+            <View key={index} style={styles.offspringCard}>
+              <View style={styles.offspringHeader}>
+                <Text style={styles.offspringTitle}>Offspring {index + 1}</Text>
+                {offspring.length > 1 && (
+                  <TouchableOpacity onPress={() => removeOffspring(index)}>
+                    <Ionicons name="close-circle" size={20} color={Colors.error} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <Text style={styles.label}>Tag Number <Text style={styles.required}>*</Text></Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. KE-050"
+                value={o.tag_number}
+                onChangeText={(v) => updateOffspring(index, "tag_number", v)}
+                autoCapitalize="characters"
+                placeholderTextColor={Colors.textLight}
+              />
+
+              <Text style={styles.label}>Name (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Calf-1"
+                value={o.name}
+                onChangeText={(v) => updateOffspring(index, "name", v)}
+                placeholderTextColor={Colors.textLight}
+              />
+
+              <Text style={styles.label}>Gender <Text style={styles.required}>*</Text></Text>
+              <View style={styles.optionsRow}>
+                {["male", "female"].map((g) => (
+                  <TouchableOpacity
+                    key={g}
+                    style={[styles.optionChip, o.gender === g && styles.optionChipActive]}
+                    onPress={() => updateOffspring(index, "gender", g)}
+                  >
+                    <Text style={[styles.optionChipText, o.gender === g && styles.optionChipTextActive]}>
+                      {g.charAt(0).toUpperCase() + g.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+
+        <TouchableOpacity
+          style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color={Colors.white} />
+          ) : (
+            <>
+              <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
+              <Text style={styles.submitBtnText}>Record Birth</Text>
+            </>
+          )}
+        </TouchableOpacity>
+        </>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: Colors.background },
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 16, paddingBottom: 40 },
   header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 20 },
@@ -202,7 +277,10 @@ const styles = StyleSheet.create({
     shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
   },
-  cardTitleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
+  cardTitleRow: {
+    flexDirection: "row", justifyContent: "space-between",
+    alignItems: "center", marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 16, fontWeight: "700", color: Colors.text,
     paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: Colors.border,

@@ -37,7 +37,10 @@ function StatCard({ icon, label, value, color, trend }) {
 
 function UpcomingBirthCard({ item }) {
   return (
-    <View style={styles.birthCard}>
+    <TouchableOpacity 
+      style={styles.birthCard}
+      onPress={() => router.push({ pathname: "/births/add", params: { pregnancy_id: item.pregnancy_id, mother_id: item.animal_id } })}
+    >
       <View style={styles.birthCardLeft}>
         <Text style={styles.birthEmoji}>🐄</Text>
         <View>
@@ -72,7 +75,7 @@ function UpcomingBirthCard({ item }) {
           </Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 

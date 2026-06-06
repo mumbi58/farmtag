@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { Colors } from "@/constants/colors";
@@ -49,8 +50,6 @@ function TabButton({ label, active, onPress, count }) {
 export default function AnimalDetail() {
   const { id } = useLocalSearchParams();
   const [animal, setAnimal] = useState(null);
-  const [purchase, setPurchase] = useState(null);
-  const [sale, setSale] = useState(null);
   const [pregnancies, setPregnancies] = useState([]);
   const [healthRecords, setHealthRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,21 +61,32 @@ export default function AnimalDetail() {
 
   const fetchAnimalData = async () => {
     try {
-      const [animalRes, pregRes, healthRes] = await Promise.all([
-        api.get(`/animals/${id}`),
-        api.get(`/pregnancies?animal_id=${id}`),
-        api.get(`/health-records?animal_id=${id}`),
-      ]);
+      const animalRes = await api.get(`/animals/${id}`);
       setAnimal(animalRes.data);
-      setPregnancies(pregRes.data || []);
-      setHealthRecords(healthRes.data || []);
       console.log("[ANIMAL DETAIL] Loaded animal:", animalRes.data?.tag_number);
     } catch (e) {
-      console.log("[ANIMAL DETAIL] Error:", e.message);
+      console.log("[ANIMAL DETAIL] Error loading animal:", e.message);
       Alert.alert("Error", "Failed to load animal details");
-    } finally {
       setLoading(false);
+      return;
     }
+
+    try {
+      const pregRes = await api.get(`/pregnancies?animal_id=${id}`);
+      setPregnancies(pregRes.data || []);
+      console.log("[ANIMAL DETAIL] Pregnancies loaded:", pregRes.data?.length);
+    } catch (e) {
+      console.log("[ANIMAL DETAIL] Pregnancies fetch error:", e.message);
+    }
+
+    try {
+      const healthRes = await api.get(`/health-records?animal_id=${id}`);
+      setHealthRecords(healthRes.data || []);
+    } catch (e) {
+      console.log("[ANIMAL DETAIL] Health records fetch error:", e.message);
+    }
+
+    setLoading(false);
   };
 
   const calculateAge = (dob) => {
@@ -87,6 +97,12 @@ export default function AnimalDetail() {
     const months = now.getMonth() - birth.getMonth();
     if (years === 0) return `${months} months`;
     return `${years} year${years > 1 ? "s" : ""}`;
+  };
+
+  const handleRecordBirth = (pregnancyId) => {
+    const animalId = Array.isArray(id) ? id[0] : id;
+    console.log("[ANIMAL DETAIL] Record birth pressed — pregnancy_id:", pregnancyId, "mother_id:", animalId);
+    router.push({ pathname: "/births/add", params: { pregnancy_id: pregnancyId, mother_id: animalId } });
   };
 
   if (loading) {
@@ -105,458 +121,299 @@ export default function AnimalDetail() {
     );
   }
 
-  const emoji =
-    ANIMAL_EMOJIS[animal.type?.toLowerCase()] || ANIMAL_EMOJIS.default;
+  const emoji = ANIMAL_EMOJIS[animal.type?.toLowerCase()] || ANIMAL_EMOJIS.default;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.text} />
-        </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerTag}>
-            {animal.tag_number} - {animal.name || "No name"}
-          </Text>
-          <View
-            style={[
-              styles.statusBadge,
-              {
-                backgroundColor: animal.is_sold ? Colors.error : Colors.success,
-              },
-            ]}
-          >
-            <Text style={styles.statusText}>
-              {animal.is_sold ? "Sold" : "Active"}
+    <SafeAreaView style={styles.safeArea} edges={["top"]}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={22} color={Colors.text} />
+          </TouchableOpacity>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerTag}>
+              {animal.tag_number} - {animal.name || "No name"}
             </Text>
-          </View>
-        </View>
-      </View>
-      <Text style={styles.headerSub}>
-        {animal.breed || animal.type} • {animal.gender} •{" "}
-        {animal.farm_name || ""}
-      </Text>
-
-      {/* Animal Image */}
-      <View style={styles.animalImageBox}>
-        <Text style={styles.animalEmoji}>{emoji}</Text>
-      </View>
-
-      {/* Tabs */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.tabs}
-      >
-        <TabButton
-          label="Overview"
-          active={activeTab === "overview"}
-          onPress={() => setActiveTab("overview")}
-        />
-        <TabButton
-          label="Pregnancy"
-          active={activeTab === "pregnancy"}
-          onPress={() => setActiveTab("pregnancy")}
-          count={pregnancies.length}
-        />
-        <TabButton
-          label="Health"
-          active={activeTab === "health"}
-          onPress={() => setActiveTab("health")}
-          count={healthRecords.length}
-        />
-      </ScrollView>
-
-      {/* Overview Tab */}
-      {activeTab === "overview" && (
-        <View>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Animal Details</Text>
-            <View style={styles.infoGrid}>
-              <InfoRow
-                label="Date of Birth"
-                value={animal.date_of_birth?.split("T")[0]}
-              />
-              <InfoRow label="Age" value={calculateAge(animal.date_of_birth)} />
-              <InfoRow label="Type" value={animal.type} />
-              <InfoRow label="Breed" value={animal.breed} />
-              <InfoRow label="Gender" value={animal.gender} />
-              <InfoRow label="Tag Number" value={animal.tag_number} />
+            <View style={[styles.statusBadge, { backgroundColor: animal.is_sold ? Colors.error : Colors.success }]}>
+              <Text style={styles.statusText}>{animal.is_sold ? "Sold" : "Active"}</Text>
             </View>
           </View>
+        </View>
 
-          {/* Financial Summary */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Financial Summary</Text>
-            <View style={styles.financialRow}>
-              <View
-                style={[styles.financialCard, { borderColor: Colors.warning }]}
+        <Text style={styles.headerSub}>
+          {animal.breed || animal.type} • {animal.gender} • {animal.farm_name || ""}
+        </Text>
+
+        {/* Animal Image */}
+        <View style={styles.animalImageBox}>
+          <Text style={styles.animalEmoji}>{emoji}</Text>
+        </View>
+
+        {/* Tabs */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabs}>
+          <TabButton label="Overview" active={activeTab === "overview"} onPress={() => setActiveTab("overview")} />
+          <TabButton label="Pregnancy" active={activeTab === "pregnancy"} onPress={() => setActiveTab("pregnancy")} count={pregnancies.length} />
+          <TabButton label="Health" active={activeTab === "health"} onPress={() => setActiveTab("health")} count={healthRecords.length} />
+        </ScrollView>
+
+        {/* Overview Tab */}
+        {activeTab === "overview" && (
+          <View>
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Animal Details</Text>
+              <View style={styles.infoGrid}>
+                <InfoRow label="Date of Birth" value={animal.date_of_birth?.split("T")[0]} />
+                <InfoRow label="Age" value={calculateAge(animal.date_of_birth)} />
+                <InfoRow label="Type" value={animal.type} />
+                <InfoRow label="Breed" value={animal.breed} />
+                <InfoRow label="Gender" value={animal.gender} />
+                <InfoRow label="Tag Number" value={animal.tag_number} />
+              </View>
+            </View>
+
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Financial Summary</Text>
+              <View style={styles.financialRow}>
+                <View style={[styles.financialCard, { borderColor: Colors.warning }]}>
+                  <Text style={styles.financialCardLabel}>Buying Price</Text>
+                  <Text style={[styles.financialCardValue, { color: Colors.warning }]}>
+                    {animal.buying_price ? `KES ${Number(animal.buying_price).toLocaleString()}` : "Not recorded"}
+                  </Text>
+                  {animal.bought_at && (
+                    <Text style={styles.financialCardDate}>{animal.bought_at?.split("T")[0]}</Text>
+                  )}
+                </View>
+                <View style={[styles.financialCard, { borderColor: Colors.success }]}>
+                  <Text style={styles.financialCardLabel}>Selling Price</Text>
+                  <Text style={[styles.financialCardValue, { color: Colors.success }]}>
+                    {animal.selling_price ? `KES ${Number(animal.selling_price).toLocaleString()}` : "Not Sold"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.actionsRow}>
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => router.push({ pathname: "/pregnancies/add", params: { animal_id: Array.isArray(id) ? id[0] : id } })}
               >
-                <Text style={styles.financialCardLabel}>Buying Price</Text>
-                <Text
-                  style={[styles.financialCardValue, { color: Colors.warning }]}
-                >
-                  {animal.buying_price
-                    ? `KES ${Number(animal.buying_price).toLocaleString()}`
-                    : "Not recorded"}
-                </Text>
-                {animal.bought_at && (
-                  <Text style={styles.financialCardDate}>
-                    {animal.bought_at?.split("T")[0]}
-                  </Text>
-                )}
-              </View>
-              <View
-                style={[styles.financialCard, { borderColor: Colors.success }]}
+                <Ionicons name="heart-outline" size={20} color={Colors.primary} />
+                <Text style={styles.actionBtnText}>Add Pregnancy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => router.push({ pathname: "/health/add", params: { animal_id: Array.isArray(id) ? id[0] : id } })}
               >
-                <Text style={styles.financialCardLabel}>Selling Price</Text>
-                <Text
-                  style={[styles.financialCardValue, { color: Colors.success }]}
-                >
-                  {animal.selling_price
-                    ? `KES ${Number(animal.selling_price).toLocaleString()}`
-                    : "Not Sold"}
-                </Text>
-              </View>
+                <Ionicons name="medical-outline" size={20} color={Colors.primary} />
+                <Text style={styles.actionBtnText}>Health Record</Text>
+              </TouchableOpacity>
             </View>
           </View>
+        )}
 
-          {/* Action Buttons */}
-          <View style={styles.actionsRow}>
+        {/* Pregnancy Tab */}
+        {activeTab === "pregnancy" && (
+          <View>
             <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => router.push(`/pregnancies/add?animal_id=${id}`)}
+              style={styles.addBtn}
+              onPress={() => router.push({ pathname: "/pregnancies/add", params: { animal_id: Array.isArray(id) ? id[0] : id } })}
             >
-              <Ionicons name="heart-outline" size={20} color={Colors.primary} />
-              <Text style={styles.actionBtnText}>Add Pregnancy</Text>
+              <Ionicons name="add" size={18} color={Colors.white} />
+              <Text style={styles.addBtnText}>Record Pregnancy</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={() => router.push(`/health/add?animal_id=${id}`)}
-            >
-              <Ionicons
-                name="medical-outline"
-                size={20}
-                color={Colors.primary}
-              />
-              <Text style={styles.actionBtnText}>Health Record</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
 
-      {/* Pregnancy Tab */}
-      {activeTab === "pregnancy" && (
-        <View>
-          <TouchableOpacity
-            style={styles.addBtn}
-            onPress={() => router.push(`/pregnancies/add?animal_id=${id}`)}
-          >
-            <Ionicons name="add" size={18} color={Colors.white} />
-            <Text style={styles.addBtnText}>Record Pregnancy</Text>
-          </TouchableOpacity>
-          {pregnancies.length === 0 ? (
-            <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>🤰</Text>
-              <Text style={styles.emptyText}>No pregnancy records</Text>
-            </View>
-          ) : (
-            pregnancies.map((p) => (
-              <View key={p.id} style={styles.recordCard}>
-                <View style={styles.recordRow}>
-                  <Text style={styles.recordLabel}>Conceived</Text>
-                  <Text style={styles.recordValue}>
-                    {p.conceived_at?.split("T")[0]}
-                  </Text>
-                </View>
-                <View style={styles.recordRow}>
-                  <Text style={styles.recordLabel}>Expected Birth</Text>
-                  <Text style={styles.recordValue}>
-                    {p.expected_birth_at?.split("T")[0]}
-                  </Text>
-                </View>
-                {p.actual_birth_at && (
-                  <View style={styles.recordRow}>
-                    <Text style={styles.recordLabel}>Actual Birth</Text>
-                    <Text style={styles.recordValue}>
-                      {p.actual_birth_at?.split("T")[0]}
-                    </Text>
-                  </View>
-                )}
-                <View
-                  style={[
-                    styles.statusPill,
-                    {
-                      backgroundColor:
-                        p.status === "delivered"
-                          ? Colors.success + "20"
-                          : Colors.warning + "20",
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.statusPillText,
-                      {
-                        color:
-                          p.status === "delivered"
-                            ? Colors.success
-                            : Colors.warning,
-                      },
-                    ]}
-                  >
-                    {p.status}
-                  </Text>
-                </View>
-                {p.status === "pregnant" && (
-                  <TouchableOpacity
-                    style={styles.recordActionBtn}
-                    onPress={() =>
-                      router.push(
-                        `/births/add?pregnancy_id=${p.id}&mother_id=${id}`,
-                      )
-                    }
-                  >
-                    <Text style={styles.recordActionBtnText}>Record Birth</Text>
-                  </TouchableOpacity>
-                )}
+            {pregnancies.length === 0 ? (
+              <View style={styles.empty}>
+                <Text style={styles.emptyEmoji}>🤰</Text>
+                <Text style={styles.emptyText}>No pregnancy records</Text>
               </View>
-            ))
-          )}
-        </View>
-      )}
-
-      {/* Health Tab */}
-      {activeTab === "health" && (
-        <View>
-          <TouchableOpacity
-            style={styles.addBtn}
-            onPress={() => router.push(`/health/add?animal_id=${id}`)}
-          >
-            <Ionicons name="add" size={18} color={Colors.white} />
-            <Text style={styles.addBtnText}>Add Health Record</Text>
-          </TouchableOpacity>
-          {healthRecords.length === 0 ? (
-            <View style={styles.empty}>
-              <Text style={styles.emptyEmoji}>🏥</Text>
-              <Text style={styles.emptyText}>No health records</Text>
-            </View>
-          ) : (
-            healthRecords.map((h) => (
-              <View key={h.id} style={styles.recordCard}>
-                <View style={styles.recordRow}>
-                  <Text style={styles.recordLabel}>Type</Text>
-                  <Text style={styles.recordValue}>{h.record_type}</Text>
-                </View>
-                <View style={styles.recordRow}>
-                  <Text style={styles.recordLabel}>Date</Text>
-                  <Text style={styles.recordValue}>
-                    {h.done_at?.split("T")[0]}
-                  </Text>
-                </View>
-                <Text style={styles.recordDesc}>{h.description}</Text>
-                {h.cost && (
-                  <View style={styles.recordRow}>
-                    <Text style={styles.recordLabel}>Cost</Text>
-                    <Text style={styles.recordValue}>
-                      KES {Number(h.cost).toLocaleString()}
-                    </Text>
-                  </View>
-                )}
-                {h.next_due_at && (
-                  <View
-                    style={[
+            ) : (
+              pregnancies.map((p) => {
+                console.log("[PREGNANCY RECORD] id:", p.id, "status:", p.status);
+                return (
+                  <View key={p.id} style={styles.recordCard}>
+                    <View style={styles.recordRow}>
+                      <Text style={styles.recordLabel}>Conceived</Text>
+                      <Text style={styles.recordValue}>{p.conceived_at?.split("T")[0]}</Text>
+                    </View>
+                    <View style={styles.recordRow}>
+                      <Text style={styles.recordLabel}>Expected Birth</Text>
+                      <Text style={styles.recordValue}>{p.expected_birth_at?.split("T")[0]}</Text>
+                    </View>
+                    {p.actual_birth_at && (
+                      <View style={styles.recordRow}>
+                        <Text style={styles.recordLabel}>Actual Birth</Text>
+                        <Text style={styles.recordValue}>{p.actual_birth_at?.split("T")[0]}</Text>
+                      </View>
+                    )}
+                    <View style={[
                       styles.statusPill,
-                      { backgroundColor: Colors.info + "20" },
-                    ]}
-                  >
-                    <Text
-                      style={[styles.statusPillText, { color: Colors.info }]}
-                    >
-                      Next due: {h.next_due_at?.split("T")[0]}
-                    </Text>
+                      { backgroundColor: p.status === "delivered" ? Colors.success + "20" : Colors.warning + "20" }
+                    ]}>
+                      <Text style={[
+                        styles.statusPillText,
+                        { color: p.status === "delivered" ? Colors.success : Colors.warning }
+                      ]}>
+                        {p.status}
+                      </Text>
+                    </View>
+
+                    {/* Show Record Birth button for any non-delivered pregnancy */}
+                    {p.status !== "delivered" && (
+                      <TouchableOpacity
+                        style={styles.recordActionBtn}
+                        onPress={() => handleRecordBirth(p.id)}
+                      >
+                        <Text style={styles.recordActionBtnText}>Record Birth</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
-                )}
+                );
+              })
+            )}
+          </View>
+        )}
+
+        {/* Health Tab */}
+        {activeTab === "health" && (
+          <View>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => router.push({ pathname: "/health/add", params: { animal_id: Array.isArray(id) ? id[0] : id } })}
+            >
+              <Ionicons name="add" size={18} color={Colors.white} />
+              <Text style={styles.addBtnText}>Add Health Record</Text>
+            </TouchableOpacity>
+
+            {healthRecords.length === 0 ? (
+              <View style={styles.empty}>
+                <Text style={styles.emptyEmoji}>🏥</Text>
+                <Text style={styles.emptyText}>No health records</Text>
               </View>
-            ))
-          )}
-        </View>
-      )}
-    </ScrollView>
+            ) : (
+              healthRecords.map((h) => (
+                <View key={h.id} style={styles.recordCard}>
+                  <View style={styles.recordRow}>
+                    <Text style={styles.recordLabel}>Type</Text>
+                    <Text style={styles.recordValue}>{h.record_type}</Text>
+                  </View>
+                  <View style={styles.recordRow}>
+                    <Text style={styles.recordLabel}>Date</Text>
+                    <Text style={styles.recordValue}>{h.done_at?.split("T")[0]}</Text>
+                  </View>
+                  <Text style={styles.recordDesc}>{h.description}</Text>
+                  {h.cost && (
+                    <View style={styles.recordRow}>
+                      <Text style={styles.recordLabel}>Cost</Text>
+                      <Text style={styles.recordValue}>KES {Number(h.cost).toLocaleString()}</Text>
+                    </View>
+                  )}
+                  {h.next_due_at && (
+                    <View style={[styles.statusPill, { backgroundColor: Colors.info + "20" }]}>
+                      <Text style={[styles.statusPillText, { color: Colors.info }]}>
+                        Next due: {h.next_due_at?.split("T")[0]}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: Colors.background },
   container: { flex: 1, backgroundColor: Colors.background },
   content: { padding: 16, paddingBottom: 40 },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
   errorText: { fontSize: 16, color: Colors.textSecondary },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 4,
-  },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 4 },
   backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: Colors.white,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
+    width: 38, height: 38, borderRadius: 12,
+    backgroundColor: Colors.white, justifyContent: "center", alignItems: "center",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06, shadowRadius: 3, elevation: 2,
   },
-  headerInfo: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
+  headerInfo: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   headerTag: { fontSize: 18, fontWeight: "800", color: Colors.text },
   statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   statusText: { color: Colors.white, fontSize: 11, fontWeight: "700" },
-  headerSub: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginBottom: 16,
-    marginLeft: 50,
-  },
+  headerSub: { fontSize: 13, color: Colors.textSecondary, marginBottom: 16, marginLeft: 50 },
   animalImageBox: {
-    backgroundColor: Colors.green100,
-    borderRadius: 16,
-    height: 180,
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 16,
+    backgroundColor: Colors.green100, borderRadius: 16,
+    height: 180, justifyContent: "center", alignItems: "center", marginBottom: 16,
   },
   animalEmoji: { fontSize: 80 },
   tabs: { marginBottom: 16 },
   tabBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: Colors.white,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
+    backgroundColor: Colors.white, marginRight: 8,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  tabBtnActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
+  tabBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   tabBtnText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
   tabBtnTextActive: { color: Colors.white },
   card: {
-    backgroundColor: Colors.white,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: Colors.white, borderRadius: 16, padding: 16, marginBottom: 14,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
   },
-  cardTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: Colors.text,
-    marginBottom: 14,
-  },
+  cardTitle: { fontSize: 15, fontWeight: "700", color: Colors.text, marginBottom: 14 },
   infoGrid: { gap: 0 },
   infoRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    flexDirection: "row", justifyContent: "space-between",
+    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   infoLabel: { fontSize: 13, color: Colors.textSecondary },
   infoValue: { fontSize: 13, fontWeight: "600", color: Colors.text },
   financialRow: { flexDirection: "row", gap: 12 },
   financialCard: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
-    backgroundColor: Colors.background,
+    flex: 1, borderWidth: 1, borderRadius: 12,
+    padding: 14, backgroundColor: Colors.background,
   },
-  financialCardLabel: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginBottom: 6,
-  },
+  financialCardLabel: { fontSize: 12, color: Colors.textSecondary, marginBottom: 6 },
   financialCardValue: { fontSize: 16, fontWeight: "800" },
   financialCardDate: { fontSize: 11, color: Colors.textLight, marginTop: 4 },
   actionsRow: { flexDirection: "row", gap: 12, marginBottom: 14 },
   actionBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: Colors.primary,
+    flex: 1, flexDirection: "row", alignItems: "center",
+    justifyContent: "center", gap: 6, backgroundColor: Colors.white,
+    borderRadius: 12, padding: 14, borderWidth: 1, borderColor: Colors.primary,
   },
   actionBtnText: { fontSize: 13, fontWeight: "600", color: Colors.primary },
   addBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    padding: 12,
-    gap: 6,
-    marginBottom: 14,
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    backgroundColor: Colors.primary, borderRadius: 12,
+    padding: 12, gap: 6, marginBottom: 14,
   },
   addBtnText: { color: Colors.white, fontSize: 14, fontWeight: "700" },
   recordCard: {
-    backgroundColor: Colors.white,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    backgroundColor: Colors.white, borderRadius: 14, padding: 14, marginBottom: 10,
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05, shadowRadius: 3, elevation: 1,
   },
   recordRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    flexDirection: "row", justifyContent: "space-between",
+    paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   recordLabel: { fontSize: 13, color: Colors.textSecondary },
   recordValue: { fontSize: 13, fontWeight: "600", color: Colors.text },
   recordDesc: { fontSize: 13, color: Colors.text, marginVertical: 8 },
   statusPill: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-    marginTop: 8,
+    alignSelf: "flex-start", paddingHorizontal: 10,
+    paddingVertical: 4, borderRadius: 20, marginTop: 8,
   },
-  statusPillText: {
-    fontSize: 12,
-    fontWeight: "700",
-    textTransform: "capitalize",
-  },
+  statusPillText: { fontSize: 12, fontWeight: "700", textTransform: "capitalize" },
   recordActionBtn: {
-    marginTop: 10,
-    backgroundColor: Colors.primary,
-    borderRadius: 10,
-    padding: 10,
-    alignItems: "center",
+    marginTop: 10, backgroundColor: Colors.primary,
+    borderRadius: 10, padding: 10, alignItems: "center",
   },
   recordActionBtnText: { color: Colors.white, fontSize: 13, fontWeight: "700" },
   empty: { alignItems: "center", paddingVertical: 40 },
