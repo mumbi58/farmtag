@@ -18,7 +18,7 @@ func GenerateResetToken() (string, error) {
 }
 
 func SendPasswordResetEmail(toEmail, name, token string) error {
-	from := os.Getenv("SMTP_FROM")
+	from := os.Getenv("SMTP_USER")
 	password := os.Getenv("SMTP_PASSWORD")
 	host := os.Getenv("SMTP_HOST")
 	port := os.Getenv("SMTP_PORT")

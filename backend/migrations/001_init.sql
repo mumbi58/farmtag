@@ -1,33 +1,35 @@
 -- Users
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
     is_premium BOOLEAN DEFAULT false,
     premium_expires_at TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT false,
+    reset_token TEXT,
+    reset_token_expires TIMESTAMPTZ,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Farms
 CREATE TABLE IF NOT EXISTS farms (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     location VARCHAR(255),
+    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-ALTER TABLE farms ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
-
 -- Animals
 CREATE TABLE IF NOT EXISTS animals (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    farm_id UUID REFERENCES farms(id) ON DELETE CASCADE,
-    mother_id UUID REFERENCES animals(id) ON DELETE SET NULL,
+    id BIGSERIAL PRIMARY KEY,
+    farm_id BIGINT REFERENCES farms(id) ON DELETE CASCADE,
+    mother_id BIGINT REFERENCES animals(id) ON DELETE SET NULL,
     tag_number VARCHAR(50) NOT NULL,
     name VARCHAR(100),
     type VARCHAR(50) NOT NULL,
@@ -43,8 +45,8 @@ CREATE TABLE IF NOT EXISTS animals (
 
 -- Animal Purchases
 CREATE TABLE IF NOT EXISTS animal_purchases (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    animal_id UUID REFERENCES animals(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    animal_id BIGINT REFERENCES animals(id) ON DELETE CASCADE,
     bought_at DATE NOT NULL,
     buying_price DECIMAL(10,2) NOT NULL,
     bought_from VARCHAR(255),
@@ -54,8 +56,8 @@ CREATE TABLE IF NOT EXISTS animal_purchases (
 
 -- Animal Sales
 CREATE TABLE IF NOT EXISTS animal_sales (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    animal_id UUID REFERENCES animals(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    animal_id BIGINT REFERENCES animals(id) ON DELETE CASCADE,
     sold_at DATE NOT NULL,
     selling_price DECIMAL(10,2) NOT NULL,
     sold_to VARCHAR(255),
@@ -65,8 +67,8 @@ CREATE TABLE IF NOT EXISTS animal_sales (
 
 -- Pregnancies
 CREATE TABLE IF NOT EXISTS pregnancies (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    animal_id UUID REFERENCES animals(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    animal_id BIGINT REFERENCES animals(id) ON DELETE CASCADE,
     conceived_at DATE NOT NULL,
     expected_birth_at DATE NOT NULL,
     actual_birth_at DATE,
@@ -78,9 +80,9 @@ CREATE TABLE IF NOT EXISTS pregnancies (
 
 -- Births
 CREATE TABLE IF NOT EXISTS births (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    pregnancy_id UUID REFERENCES pregnancies(id) ON DELETE CASCADE,
-    mother_id UUID REFERENCES animals(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    pregnancy_id BIGINT REFERENCES pregnancies(id) ON DELETE CASCADE,
+    mother_id BIGINT REFERENCES animals(id) ON DELETE CASCADE,
     birth_date DATE NOT NULL,
     total_offspring INT DEFAULT 1,
     notes TEXT,
@@ -89,8 +91,8 @@ CREATE TABLE IF NOT EXISTS births (
 
 -- Health Records
 CREATE TABLE IF NOT EXISTS health_records (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    animal_id UUID REFERENCES animals(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    animal_id BIGINT REFERENCES animals(id) ON DELETE CASCADE,
     record_type VARCHAR(50) NOT NULL,
     description TEXT NOT NULL,
     cost DECIMAL(10,2),
@@ -101,8 +103,8 @@ CREATE TABLE IF NOT EXISTS health_records (
 
 -- Expenses
 CREATE TABLE IF NOT EXISTS expenses (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    farm_id UUID REFERENCES farms(id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    farm_id BIGINT REFERENCES farms(id) ON DELETE CASCADE,
     category VARCHAR(50) NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     description TEXT,

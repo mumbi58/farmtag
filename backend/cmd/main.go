@@ -28,6 +28,11 @@ func main() {
 	e.Use(echoMiddleware.Recover())
 	e.Use(echoMiddleware.CORS())
 	e.Use(customMiddleware.Logger())
+	// Serve reset password web page
+e.Static("/static", "static")
+e.GET("/reset-password", func(c echo.Context) error {
+    return c.File("static/reset-password.html")
+})
 
 	// replace the health check and add routes
 e.GET("/health", func(c echo.Context) error {

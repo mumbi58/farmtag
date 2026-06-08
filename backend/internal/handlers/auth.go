@@ -4,20 +4,29 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"strings"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"farmtag/db"
 	"farmtag/internal/models"
 	"farmtag/internal/utils"
+
 )
 func Register(c echo.Context) error {
-	log.Println("[AUTH] Register request received")
+    log.Println("[AUTH] Register request received")
 
-	req := new(models.RegisterRequest)
-	if err := c.Bind(req); err != nil {
-		log.Printf("[AUTH] Register bind error: %v", err)
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
-	}
+    req := new(models.RegisterRequest)
+    if err := c.Bind(req); err != nil {
+        log.Printf("[AUTH] Register bind error: %v", err)
+        return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+    }
+
+    // Normalize email
+    req.Email = strings.TrimSpace(strings.ToLower(req.Email))
+    req.Name  = strings.TrimSpace(req.Name)
+    
+    // rest of the code unchanged...
 
 	var count int
 	err := db.DB.Get(&count, "SELECT COUNT(*) FROM users WHERE email=$1", req.Email)
@@ -47,7 +56,7 @@ func Register(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create account"})
 	}
 
-	token, err := utils.GenerateToken(user.ID, user.Email)
+token, err := utils.GenerateToken(strconv.FormatInt(user.ID, 10), user.Email)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
 	}
@@ -66,7 +75,10 @@ func ForgotPassword(c echo.Context) error {
 
 	// Check user exists
 	var user models.User
-	err := db.DB.Get(&user, "SELECT * FROM users WHERE email=$1", req.Email)
+err := db.DB.Get(&user, 
+    "SELECT * FROM users WHERE email=$1 AND is_deleted IS NOT TRUE", 
+    strings.TrimSpace(strings.ToLower(req.Email)),
+)
 	if err != nil {
 		// Don't reveal if email exists or not — security best practice
 		log.Printf("[AUTH] ForgotPassword — email not found: %s (returning OK anyway)", req.Email)
@@ -139,21 +151,28 @@ func ResetPassword(c echo.Context) error {
 }
 
 func Login(c echo.Context) error {
-	log.Println("[AUTH] Login request received")
+    log.Println("[AUTH] Login request received")
 
-	req := new(models.LoginRequest)
-	if err := c.Bind(req); err != nil {
-		log.Printf("[AUTH] Login bind error: %v", err)
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
-	}
+    req := new(models.LoginRequest)
+    if err := c.Bind(req); err != nil {
+        log.Printf("[AUTH] Login bind error: %v", err)
+        return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+    }
 
-	// Fetch user
-	var user models.User
-	err := db.DB.Get(&user, "SELECT * FROM users WHERE email=$1 AND is_deleted=false", req.Email)
-	if err != nil {
-		log.Printf("[AUTH] Login failed — user not found: %s", req.Email)
-		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid email or password"})
-	}
+    // ADD THIS
+    log.Printf("[AUTH] Login attempting — raw email: %q", req.Email)
+    req.Email = strings.TrimSpace(strings.ToLower(req.Email))
+    log.Printf("[AUTH] Login attempting — clean email: %q", req.Email)
+
+    var user models.User
+    err := db.DB.Get(&user,
+        "SELECT * FROM users WHERE email=$1 AND is_deleted IS NOT TRUE",
+        req.Email,
+    )
+    if err != nil {
+        log.Printf("[AUTH] Login failed — user not found: %q | err: %v", req.Email, err)
+        return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid email or password"})
+    }
 
 	// Check password
 	if !utils.CheckPassword(user.Password, req.Password) {
@@ -162,7 +181,7 @@ func Login(c echo.Context) error {
 	}
 
 	// Generate token
-	token, err := utils.GenerateToken(user.ID, user.Email)
+token, err := utils.GenerateToken(strconv.FormatInt(user.ID, 10), user.Email)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
 	}

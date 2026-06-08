@@ -86,6 +86,13 @@ export default function LoginPage() {
           )}
         </TouchableOpacity>
 
+       <TouchableOpacity
+          style={styles.forgotBtn}
+          onPress={() => router.push("/forgot-password")}
+        >
+          <Text style={styles.forgotText}>Forgot Password?</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.linkButton}
           onPress={() => router.push("/register")}
@@ -149,6 +156,16 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: Colors.primary,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  forgotBtn: {
+    alignItems: "center",
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  forgotText: {
+    color: Colors.textSecondary,
     fontSize: 14,
     fontWeight: "600",
   },
