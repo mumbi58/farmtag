@@ -41,7 +41,9 @@ func Register(e *echo.Echo) {
 	auth.POST("/register", handlers.Register)
 	auth.POST("/login", handlers.Login)
 	auth.POST("/forgot-password", handlers.ForgotPassword)
-auth.POST("/reset-password", handlers.ResetPassword)
+	auth.POST("/reset-password", handlers.ResetPassword)
+	auth.POST("/google", handlers.GoogleLogin)
+	auth.POST("/apple", handlers.AppleLogin)
 
 	// Protected
 	protected := api.Group("")

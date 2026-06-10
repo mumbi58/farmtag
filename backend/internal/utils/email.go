@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/smtp"
 	"os"
+	"strings"
 )
 
 func GenerateResetToken() (string, error) {
@@ -18,13 +19,30 @@ func GenerateResetToken() (string, error) {
 }
 
 func SendPasswordResetEmail(toEmail, name, token string) error {
-	from := os.Getenv("SMTP_USER")
+	fromUser := os.Getenv("SMTP_USER")
+	fromEmail := os.Getenv("SMTP_FROM")
+	if fromEmail == "" {
+		fromEmail = fromUser
+	}
 	password := os.Getenv("SMTP_PASSWORD")
 	host := os.Getenv("SMTP_HOST")
 	port := os.Getenv("SMTP_PORT")
 
-	resetLink := fmt.Sprintf("%s/reset-password?token=%s",
-		os.Getenv("APP_URL"), token)
+	appURL := os.Getenv("APP_URL")
+	if appURL == "" {
+		webURL := os.Getenv("WEB_URL")
+		if webURL != "" {
+			if !strings.HasPrefix(webURL, "http://") && !strings.HasPrefix(webURL, "https://") {
+				appURL = "https://" + webURL
+			} else {
+				appURL = webURL
+			}
+		} else {
+			appURL = "http://localhost:8080"
+		}
+	}
+
+	resetLink := fmt.Sprintf("%s/reset-password?token=%s", appURL, token)
 
 	subject := "Reset Your FarmTag Password"
 	body := fmt.Sprintf(`Hi %s,
@@ -40,15 +58,15 @@ If you didn't request this, you can safely ignore this email.
 — The FarmTag Team`, name, resetLink)
 
 	msg := fmt.Sprintf("From: %s\nTo: %s\nSubject: %s\n\n%s",
-		from, toEmail, subject, body)
+		fromEmail, toEmail, subject, body)
 
-	auth := smtp.PlainAuth("", from, password, host)
-	err := smtp.SendMail(host+":"+port, auth, from, []string{toEmail}, []byte(msg))
+	auth := smtp.PlainAuth("", fromUser, password, host)
+	err := smtp.SendMail(host+":"+port, auth, fromEmail, []string{toEmail}, []byte(msg))
 	if err != nil {
 		log.Printf("[EMAIL] Failed to send to %s: %v", toEmail, err)
 		return err
 	}
 
-	log.Printf("[EMAIL] Password reset email sent to: %s", toEmail)
+	log.Printf("[EMAIL] Password reset email sent to: %s (from: %s)", toEmail, fromEmail)
 	return nil
 }

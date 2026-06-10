@@ -13,6 +13,8 @@ type User struct {
     IsDeleted          bool       `db:"is_deleted" json:"-"`
     ResetToken         *string    `db:"reset_token" json:"-"`
     ResetTokenExpires  *time.Time `db:"reset_token_expires" json:"-"`
+    GoogleID           *string    `db:"google_id" json:"google_id,omitempty"`
+    AppleID            *string    `db:"apple_id" json:"apple_id,omitempty"`
     CreatedAt          time.Time  `db:"created_at" json:"created_at"`
     UpdatedAt          time.Time  `db:"updated_at" json:"updated_at"`
 }
@@ -34,6 +36,20 @@ type ResetPasswordRequest struct {
 type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
+}
+
+type GoogleLoginRequest struct {
+	IdToken string `json:"id_token"`
+	ID      string `json:"id"`
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+}
+
+type AppleLoginRequest struct {
+	IdentityToken string `json:"identity_token"`
+	UserID        string `json:"user_id"`
+	Email         string `json:"email"`
+	Name          string `json:"name"`
 }
 
 type AuthResponse struct {

@@ -6,7 +6,7 @@ const appConfig = Constants.expoConfig || Constants.manifest || {};
 const apiHost =
   appConfig.extra?.API_URL ||
   process.env.EXPO_PUBLIC_API_URL ||
-  "http://102.0.6.213:8080";
+  "http://192.168.1.111 :8080";
 
 export const BASE_URL = `${apiHost}/api/v1`;
 

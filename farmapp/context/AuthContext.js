@@ -54,6 +54,36 @@ export function AuthProvider({ children }) {
     router.replace("/(tabs)/dashboard");
   };
 
+  const loginWithGoogle = async (idToken, fallbackDetails = {}) => {
+    const res = await api.post("/auth/google", {
+      id_token: idToken,
+      id: fallbackDetails.id,
+      email: fallbackDetails.email,
+      name: fallbackDetails.name,
+    });
+    const { token, user } = res.data;
+    await AsyncStorage.setItem("token", token);
+    await AsyncStorage.setItem("user", JSON.stringify(user));
+    setToken(token);
+    setUser(user);
+    router.replace("/(tabs)/dashboard");
+  };
+
+  const loginWithApple = async (identityToken, userID, fallbackDetails = {}) => {
+    const res = await api.post("/auth/apple", {
+      identity_token: identityToken,
+      user_id: userID,
+      email: fallbackDetails.email,
+      name: fallbackDetails.name,
+    });
+    const { token, user } = res.data;
+    await AsyncStorage.setItem("token", token);
+    await AsyncStorage.setItem("user", JSON.stringify(user));
+    setToken(token);
+    setUser(user);
+    router.replace("/(tabs)/dashboard");
+  };
+
   const logout = async () => {
     await AsyncStorage.removeItem("token");
     await AsyncStorage.removeItem("user");
@@ -64,7 +94,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, register, logout }}
+      value={{ user, token, loading, login, register, logout, loginWithGoogle, loginWithApple }}
     >
       {children}
     </AuthContext.Provider>

@@ -7,14 +7,34 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  NativeModules,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/context/AuthContext";
 import { Colors } from "@/constants/colors";
 
+// Safely require Google and Apple native modules only if they are present in the binary (prevents Expo Go crash)
+let GoogleSignin = null;
+if (NativeModules.RNGoogleSignin) {
+  try {
+    GoogleSignin = require("@react-native-google-signin/google-signin").GoogleSignin;
+  } catch (e) {
+    console.log("[AUTH] Google Sign-in module not loaded:", e.message);
+  }
+}
+
+let AppleAuthentication = null;
+try {
+  AppleAuthentication = require("expo-apple-authentication");
+} catch (e) {
+  console.log("[AUTH] Apple Authentication module not loaded:", e.message);
+}
+
 export default function LoginPage() {
-  const { user, login } = useAuth();
+  const { user, login, loginWithGoogle, loginWithApple } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -24,6 +44,19 @@ export default function LoginPage() {
       router.replace("/(tabs)/dashboard");
     }
   }, [user]);
+
+  useEffect(() => {
+    if (GoogleSignin) {
+      try {
+        GoogleSignin.configure({
+          webClientId: "1008719970978-example.apps.googleusercontent.com", // Replace with your actual Google Client ID if configuring production client
+          offlineAccess: true,
+        });
+      } catch (e) {
+        console.log("[AUTH] Google Sign-in configuration failed:", e.message);
+      }
+    }
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -49,6 +82,119 @@ export default function LoginPage() {
       }
       Alert.alert("Login Failed", message);
     }finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    if (!GoogleSignin) {
+      Alert.alert(
+        "Google Sign-In Native Setup Required",
+        "Google Sign-in requires native configuration and a development build. Do you want to bypass using a development test account instead?",
+        [
+          { text: "Cancel", style: "cancel", onPress: () => setSubmitting(false) },
+          {
+            text: "Bypass (Dev Mode)",
+            onPress: async () => {
+              setSubmitting(true);
+              try {
+                await loginWithGoogle("", {
+                  id: "google_dev_user_123",
+                  email: "google_user@kerdonet.com",
+                  name: "Google FarmTag User",
+                });
+                Alert.alert("Success", "Signed in with Dev Google Account!");
+              } catch (err) {
+                Alert.alert("Error", err.message);
+              } finally {
+                setSubmitting(false);
+              }
+            }
+          }
+        ]
+      );
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await GoogleSignin.hasPlayServices();
+      const response = await GoogleSignin.signIn();
+      
+      const idToken = response.data?.idToken || response.idToken;
+      const userObj = response.data?.user || response.user;
+      
+      if (!idToken) {
+        throw new Error("Failed to retrieve ID Token from Google");
+      }
+
+      await loginWithGoogle(idToken, {
+        id: userObj.id,
+        email: userObj.email,
+        name: userObj.name || "",
+      });
+      Alert.alert("Success", "Signed in with Google!");
+    } catch (error) {
+      console.log("[GOOGLE SIGN-IN] Error details:", error);
+      Alert.alert("Google Sign-In Failed", error.message || "An unknown error occurred.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    const isAvailable = AppleAuthentication && await AppleAuthentication.isAvailableAsync();
+    if (!isAvailable) {
+      Alert.alert(
+        "Apple Sign-In Not Available",
+        "Apple Sign-in is not supported on this device/simulator, or you are running in Expo Go. Do you want to bypass using a development test account?",
+        [
+          { text: "Cancel", style: "cancel", onPress: () => setSubmitting(false) },
+          {
+            text: "Bypass (Dev Mode)",
+            onPress: async () => {
+              setSubmitting(true);
+              try {
+                await loginWithApple("", "apple_dev_user_456", {
+                  email: "apple_user@kerdonet.com",
+                  name: "Apple FarmTag User",
+                });
+                Alert.alert("Success", "Signed in with Dev Apple ID!");
+              } catch (err) {
+                Alert.alert("Error", err.message);
+              } finally {
+                setSubmitting(false);
+              }
+            }
+          }
+        ]
+      );
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+
+      const name = credential.fullName ? 
+        [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(" ") : "";
+
+      await loginWithApple(credential.identityToken, credential.user, {
+        email: credential.email || "",
+        name: name,
+      });
+      Alert.alert("Success", "Signed in with Apple!");
+    } catch (error) {
+      console.log("[APPLE SIGN-IN] Error details:", error);
+      if (error.code !== "ERR_REQUEST_CANCELED") {
+        Alert.alert("Apple Sign-In Failed", error.message);
+      }
+    } finally {
       setSubmitting(false);
     }
   };
@@ -92,6 +238,36 @@ export default function LoginPage() {
         >
           <Text style={styles.forgotText}>Forgot Password?</Text>
         </TouchableOpacity>
+
+        {/* Divider */}
+        <View style={styles.dividerContainer}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or continue with</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        {/* Social Buttons Row */}
+        <View style={styles.socialContainer}>
+          <TouchableOpacity 
+            style={styles.googleButton} 
+            onPress={handleGoogleLogin} 
+            disabled={submitting}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="logo-google" size={20} color="#DB4437" style={styles.socialIcon} />
+            <Text style={styles.googleButtonText}>Google</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.appleButton} 
+            onPress={handleAppleLogin} 
+            disabled={submitting}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="logo-apple" size={20} color="#FFFFFF" style={styles.socialIcon} />
+            <Text style={styles.appleButtonText}>Apple</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={styles.linkButton}
@@ -150,15 +326,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
   },
-  linkButton: {
-    marginTop: 16,
-    alignItems: "center",
-  },
-  linkText: {
-    color: Colors.primary,
-    fontSize: 14,
-    fontWeight: "600",
-  },
   forgotBtn: {
     alignItems: "center",
     marginTop: 12,
@@ -166,6 +333,80 @@ const styles = StyleSheet.create({
   },
   forgotText: {
     color: Colors.textSecondary,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 18,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: Colors.textLight,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  socialContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 10,
+  },
+  googleButton: {
+    flex: 1,
+    flexDirection: "row",
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.white,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  googleButtonText: {
+    color: Colors.text,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  appleButton: {
+    flex: 1,
+    flexDirection: "row",
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: Colors.black,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  appleButtonText: {
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  socialIcon: {
+    marginRight: 8,
+  },
+  linkButton: {
+    marginTop: 20,
+    alignItems: "center",
+  },
+  linkText: {
+    color: Colors.primary,
     fontSize: 14,
     fontWeight: "600",
   },

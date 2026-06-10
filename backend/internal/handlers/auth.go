@@ -1,17 +1,21 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
-	"time"
-	"strings"
+	"os"
 	"strconv"
+	"strings"
+	"time"
 
-	"github.com/labstack/echo/v4"
 	"farmtag/db"
 	"farmtag/internal/models"
 	"farmtag/internal/utils"
 
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/labstack/echo/v4"
 )
 func Register(c echo.Context) error {
     log.Println("[AUTH] Register request received")
@@ -263,4 +267,263 @@ func ServeStaticPage(title string, body string) echo.HandlerFunc {
 		</html>`
 		return c.HTML(http.StatusOK, html)
 	}
+}
+
+type GoogleTokenInfo struct {
+	Sub           string `json:"sub"`
+	Email         string `json:"email"`
+	Name          string `json:"name"`
+	EmailVerified string `json:"email_verified"`
+	Error         string `json:"error"`
+}
+
+func verifyGoogleIDToken(idToken string) (*GoogleTokenInfo, error) {
+	resp, err := http.Get("https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("google tokeninfo API returned status %d", resp.StatusCode)
+	}
+
+	var info GoogleTokenInfo
+	if err := json.NewDecoder(resp.Body).Decode(&info); err != nil {
+		return nil, err
+	}
+
+	if info.Error != "" {
+		return nil, fmt.Errorf("google auth error: %s", info.Error)
+	}
+
+	return &info, nil
+}
+
+func parseAppleToken(identityToken string) (string, string, error) {
+	if identityToken == "" {
+		return "", "", fmt.Errorf("empty identity token")
+	}
+
+	parser := jwt.NewParser()
+	var claims jwt.MapClaims
+	_, _, err := parser.ParseUnverified(identityToken, &claims)
+	if err != nil {
+		return "", "", err
+	}
+
+	sub, _ := claims["sub"].(string)
+	email, _ := claims["email"].(string)
+
+	return sub, email, nil
+}
+
+func GoogleLogin(c echo.Context) error {
+	log.Println("[AUTH] GoogleLogin request received")
+
+	req := new(models.GoogleLoginRequest)
+	if err := c.Bind(req); err != nil {
+		log.Printf("[AUTH] GoogleLogin bind error: %v", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	}
+
+	var googleID, email, name string
+
+	// 1. Verify token if provided
+	if req.IdToken != "" {
+		info, err := verifyGoogleIDToken(req.IdToken)
+		if err != nil {
+			log.Printf("[AUTH] Google ID token verification failed: %v", err)
+			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Invalid Google token"})
+		}
+		googleID = info.Sub
+		email = strings.TrimSpace(strings.ToLower(info.Email))
+		name = strings.TrimSpace(info.Name)
+	} else {
+		// Fallback for development if APP_ENV is development
+		if os.Getenv("APP_ENV") == "development" || os.Getenv("APP_ENV") == "" {
+			googleID = req.ID
+			email = strings.TrimSpace(strings.ToLower(req.Email))
+			name = strings.TrimSpace(req.Name)
+		} else {
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Google ID token required"})
+		}
+	}
+
+	if googleID == "" || email == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Google ID and email are required"})
+	}
+
+	if name == "" {
+		parts := strings.Split(email, "@")
+		name = parts[0]
+	}
+
+	// 2. Check if user already exists with this google_id
+	var user models.User
+	err := db.DB.Get(&user, "SELECT * FROM users WHERE google_id = $1 AND is_deleted IS NOT TRUE", googleID)
+	if err == nil {
+		// User exists, generate token and return
+		token, err := utils.GenerateToken(strconv.FormatInt(user.ID, 10), user.Email)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
+		}
+		log.Printf("[AUTH] Google login successful for user ID: %d", user.ID)
+		return c.JSON(http.StatusOK, models.AuthResponse{Token: token, User: user})
+	}
+
+	// 3. Check if user exists with this email
+	err = db.DB.Get(&user, "SELECT * FROM users WHERE email = $1 AND is_deleted IS NOT TRUE", email)
+	if err == nil {
+		// Email exists, link google_id and update profile
+		_, err = db.DB.Exec("UPDATE users SET google_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", googleID, user.ID)
+		if err != nil {
+			log.Printf("[AUTH] Failed to link Google ID: %v", err)
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to link Google account"})
+		}
+		user.GoogleID = &googleID
+
+		token, err := utils.GenerateToken(strconv.FormatInt(user.ID, 10), user.Email)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
+		}
+		log.Printf("[AUTH] Linked Google ID and logged in user ID: %d", user.ID)
+		return c.JSON(http.StatusOK, models.AuthResponse{Token: token, User: user})
+	}
+
+	// 4. Create new user
+	randomPassword, err := utils.GenerateResetToken()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Server error"})
+	}
+	hashed, err := utils.HashPassword(randomPassword)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Server error"})
+	}
+
+	query := `
+		INSERT INTO users (name, email, password, google_id)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, name, email, phone, is_premium, premium_expires_at, google_id, apple_id, created_at, updated_at
+	`
+	err = db.DB.QueryRowx(query, name, email, hashed, googleID).StructScan(&user)
+	if err != nil {
+		log.Printf("[AUTH] Google register insert error: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create account"})
+	}
+
+	token, err := utils.GenerateToken(strconv.FormatInt(user.ID, 10), user.Email)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
+	}
+
+	log.Printf("[AUTH] User registered via Google — ID: %d | Email: %s", user.ID, user.Email)
+	return c.JSON(http.StatusCreated, models.AuthResponse{Token: token, User: user})
+}
+
+func AppleLogin(c echo.Context) error {
+	log.Println("[AUTH] AppleLogin request received")
+
+	req := new(models.AppleLoginRequest)
+	if err := c.Bind(req); err != nil {
+		log.Printf("[AUTH] AppleLogin bind error: %v", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	}
+
+	var appleID, email, name string
+
+	// 1. Try to parse token claims if token is provided
+	if req.IdentityToken != "" {
+		parsedSub, parsedEmail, err := parseAppleToken(req.IdentityToken)
+		if err == nil {
+			appleID = parsedSub
+			email = strings.TrimSpace(strings.ToLower(parsedEmail))
+		} else {
+			log.Printf("[AUTH] Warning: Failed to parse Apple identity token: %v", err)
+		}
+	}
+
+	// 2. Fallback to body-supplied UserID and Email if empty or parsing failed
+	if appleID == "" {
+		appleID = req.UserID
+	}
+	if email == "" {
+		email = strings.TrimSpace(strings.ToLower(req.Email))
+	}
+	name = strings.TrimSpace(req.Name)
+
+	if appleID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Apple User ID or identity token required"})
+	}
+
+	// 3. Check if user already exists with this apple_id
+	var user models.User
+	err := db.DB.Get(&user, "SELECT * FROM users WHERE apple_id = $1 AND is_deleted IS NOT TRUE", appleID)
+	if err == nil {
+		// User exists, generate token and return
+		token, err := utils.GenerateToken(strconv.FormatInt(user.ID, 10), user.Email)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
+		}
+		log.Printf("[AUTH] Apple login successful for user ID: %d", user.ID)
+		return c.JSON(http.StatusOK, models.AuthResponse{Token: token, User: user})
+	}
+
+	// If user does not exist by apple_id, we need email to proceed
+	if email == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Email is required for first-time Apple registration"})
+	}
+
+	if name == "" {
+		parts := strings.Split(email, "@")
+		name = parts[0]
+	}
+
+	// 4. Check if user exists with this email
+	err = db.DB.Get(&user, "SELECT * FROM users WHERE email = $1 AND is_deleted IS NOT TRUE", email)
+	if err == nil {
+		// Email exists, link apple_id and update profile
+		_, err = db.DB.Exec("UPDATE users SET apple_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2", appleID, user.ID)
+		if err != nil {
+			log.Printf("[AUTH] Failed to link Apple ID: %v", err)
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to link Apple account"})
+		}
+		user.AppleID = &appleID
+
+		token, err := utils.GenerateToken(strconv.FormatInt(user.ID, 10), user.Email)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
+		}
+		log.Printf("[AUTH] Linked Apple ID and logged in user ID: %d", user.ID)
+		return c.JSON(http.StatusOK, models.AuthResponse{Token: token, User: user})
+	}
+
+	// 5. Create new user
+	randomPassword, err := utils.GenerateResetToken()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Server error"})
+	}
+	hashed, err := utils.HashPassword(randomPassword)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Server error"})
+	}
+
+	query := `
+		INSERT INTO users (name, email, password, apple_id)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, name, email, phone, is_premium, premium_expires_at, google_id, apple_id, created_at, updated_at
+	`
+	err = db.DB.QueryRowx(query, name, email, hashed, appleID).StructScan(&user)
+	if err != nil {
+		log.Printf("[AUTH] Apple register insert error: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create account"})
+	}
+
+	token, err := utils.GenerateToken(strconv.FormatInt(user.ID, 10), user.Email)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to generate token"})
+	}
+
+	log.Printf("[AUTH] User registered via Apple — ID: %d | Email: %s", user.ID, user.Email)
+	return c.JSON(http.StatusCreated, models.AuthResponse{Token: token, User: user})
 }
