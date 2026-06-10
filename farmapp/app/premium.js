@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, ActivityIndicator, Alert
+  TouchableOpacity, ActivityIndicator, Alert, Platform
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Colors } from "@/constants/colors";
-import api from "@/constants/api";
+import { useAuth } from "@/context/AuthContext";
+import { getSubscriptionPlans, purchasePlan } from "@/utils/purchases";
 
 const FEATURES = [
   { icon: "leaf-outline", text: "Unlimited farms" },
@@ -20,40 +21,59 @@ const FEATURES = [
 ];
 
 export default function Premium() {
+  const { updateUserFields } = useAuth();
   const [loading, setLoading] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState("monthly");
-
-  const plans = [
+  const [plans, setPlans] = useState([
     {
       id: "monthly",
       label: "Monthly",
-      price: "KES 299",
+      price: "KES 300",
       period: "per month",
       savings: null,
     },
     {
       id: "yearly",
       label: "Yearly",
-      price: "KES 1,999",
+      price: "KES 2,000",
       period: "per year",
-      savings: "Save KES 1,589",
+      savings: "Save KES 1,600",
     },
-  ];
+  ]);
+
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        const rcPlans = await getSubscriptionPlans();
+        if (rcPlans && rcPlans.length > 0) {
+          setPlans(rcPlans);
+        }
+      } catch (err) {
+        console.log("[PREMIUM] Error loading offerings:", err.message);
+      }
+    }
+    fetchPlans();
+  }, []);
 
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      // This is where you'd integrate payment (e.g. M-Pesa, Stripe)
-      // For now we'll just show a coming soon message
-      Alert.alert(
-        "Coming Soon! 🎉",
-        "Payment integration is being set up. We'll notify you when it's ready!\n\nFor now contact us to activate premium manually.",
-        [{ text: "OK" }]
-      );
-      console.log("[PREMIUM] Upgrade attempted — plan:", selectedPlan);
+      const res = await purchasePlan(selectedPlan, plans);
+      if (res && res.status === "success") {
+        await updateUserFields({ is_premium: true, premium_expires_at: res.expires_at });
+        Alert.alert(
+          "Upgrade Successful! ⭐",
+          "Thank you for upgrading to Premium. Your subscription is now active!",
+          [{ text: "Great!", onPress: () => router.replace("/(tabs)/dashboard") }]
+        );
+      } else if (res && res.status === "cancelled") {
+        // user cancelled purchase
+      } else {
+        Alert.alert("Upgrade Failed", "Failed to complete purchase. Please try again.");
+      }
     } catch (e) {
-      console.log("[PREMIUM] Upgrade error:", e.message);
-      Alert.alert("Error", "Failed to process upgrade");
+      console.log("[PREMIUM] Purchase error:", e.message);
+      Alert.alert("Error", e.message || "Failed to process upgrade");
     } finally {
       setLoading(false);
     }
@@ -167,8 +187,26 @@ export default function Premium() {
           )}
         </TouchableOpacity>
 
+        {/* Trust Badges */}
+        <View style={styles.trustBadges}>
+          <View style={styles.trustItem}>
+            <Ionicons name="lock-closed-outline" size={13} color={Colors.textSecondary} />
+            <Text style={styles.trustText}>Secure checkout</Text>
+          </View>
+          <View style={styles.trustDivider} />
+          <View style={styles.trustItem}>
+            <Ionicons name="logo-apple" size={13} color={Colors.textSecondary} />
+            <Text style={styles.trustText}>Apple Pay</Text>
+          </View>
+          <View style={styles.trustDivider} />
+          <View style={styles.trustItem}>
+            <Ionicons name="logo-google" size={13} color={Colors.textSecondary} />
+            <Text style={styles.trustText}>Google Pay</Text>
+          </View>
+        </View>
+
         <Text style={styles.disclaimer}>
-          Cancel anytime. No hidden fees. Secure payment.
+          Cancel anytime. No hidden fees. Billing handled securely via standard App Store & Play Store subscription rules.
         </Text>
 
       </ScrollView>
@@ -261,5 +299,28 @@ const styles = StyleSheet.create({
     padding: 16, gap: 8, marginBottom: 12,
   },
   upgradeBtnText: { color: Colors.white, fontSize: 16, fontWeight: "800" },
-  disclaimer: { textAlign: "center", fontSize: 12, color: Colors.textLight },
+  trustBadges: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  trustItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  trustText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: "500",
+  },
+  trustDivider: {
+    width: 1,
+    height: 12,
+    backgroundColor: Colors.border,
+  },
+  disclaimer: { textAlign: "center", fontSize: 12, color: Colors.textLight, lineHeight: 18 },
 });

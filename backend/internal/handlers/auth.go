@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -253,16 +254,142 @@ func ServeStaticPage(title string, body string) echo.HandlerFunc {
 		<head>
 			<meta charset="UTF-8">
 			<meta name="viewport" content="width=device-width, initial-scale=1.0">
-			<title>` + title + `</title>
+			<title>` + title + ` - FarmTag</title>
+			<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 			<style>
-				body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; padding: 40px 20px; max-width: 800px; margin: 0 auto; color: #333; }
-				h1 { color: #10B981; margin-bottom: 24px; }
-				p { margin-bottom: 16px; font-size: 16px; }
+				:root {
+					--primary: #10B981;
+					--primary-dark: #059669;
+					--primary-light: #D1FAE5;
+					--bg: #F9FAFB;
+					--text-main: #1F2937;
+					--text-muted: #4B5563;
+					--border: #E5E7EB;
+					--card-bg: #FFFFFF;
+				}
+				body {
+					font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+					background-color: var(--bg);
+					color: var(--text-main);
+					line-height: 1.6;
+					margin: 0;
+					padding: 0;
+					-webkit-font-smoothing: antialiased;
+				}
+				.header {
+					background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+					color: white;
+					padding: 60px 20px;
+					text-align: center;
+					border-bottom: 1px solid var(--border);
+				}
+				.header h1 {
+					margin: 0;
+					font-size: 2.5rem;
+					font-weight: 800;
+					letter-spacing: -0.025em;
+				}
+				.header p {
+					margin: 10px 0 0 0;
+					font-size: 1.1rem;
+					color: var(--primary-light);
+					font-weight: 500;
+				}
+				.container {
+					max-width: 800px;
+					margin: -40px auto 60px;
+					padding: 0 20px;
+				}
+				.card {
+					background-color: var(--card-bg);
+					border-radius: 16px;
+					padding: 40px;
+					box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+					border: 1px solid var(--border);
+				}
+				h2 {
+					color: var(--primary-dark);
+					font-size: 1.5rem;
+					font-weight: 700;
+					margin-top: 2rem;
+					margin-bottom: 1rem;
+					border-bottom: 2px solid var(--primary-light);
+					padding-bottom: 8px;
+					display: flex;
+					align-items: center;
+					gap: 8px;
+				}
+				h2:first-of-type {
+					margin-top: 0;
+				}
+				p, li {
+					font-size: 1rem;
+					color: var(--text-muted);
+					margin-bottom: 1.2rem;
+				}
+				ul, ol {
+					padding-left: 20px;
+					margin-bottom: 1.5rem;
+				}
+				li {
+					margin-bottom: 0.5rem;
+				}
+				.footer {
+					text-align: center;
+					padding: 40px 20px;
+					font-size: 0.875rem;
+					color: var(--text-muted);
+					border-top: 1px solid var(--border);
+					margin-top: 40px;
+				}
+				a {
+					color: var(--primary);
+					text-decoration: none;
+					font-weight: 600;
+					transition: color 0.2s;
+				}
+				a:hover {
+					color: var(--primary-dark);
+					text-decoration: underline;
+				}
+				.highlight-box {
+					background-color: #F0FDF4;
+					border-left: 4px solid var(--primary);
+					padding: 20px;
+					border-radius: 0 8px 8px 0;
+					margin: 20px 0;
+				}
+				.highlight-box p {
+					margin: 0;
+					color: var(--primary-dark);
+					font-weight: 500;
+				}
+				.badge {
+					display: inline-block;
+					background-color: var(--primary-light);
+					color: var(--primary-dark);
+					padding: 4px 12px;
+					border-radius: 9999px;
+					font-size: 0.875rem;
+					font-weight: 600;
+					margin-bottom: 16px;
+				}
 			</style>
 		</head>
 		<body>
-			<h1>` + title + `</h1>
-			<p>` + body + `</p>
+			<div class="header">
+				<h1>` + title + `</h1>
+				<p>Last updated: June 10, 2026</p>
+			</div>
+			<div class="container">
+				<div class="card">
+					` + body + `
+				</div>
+			</div>
+			<div class="footer">
+				&copy; 2026 FarmTag. All rights reserved.<br>
+				If you have any questions, contact us at <a href="mailto:info@kerdonet.com">info@kerdonet.com</a>
+			</div>
 		</body>
 		</html>`
 		return c.HTML(http.StatusOK, html)
@@ -526,4 +653,75 @@ func AppleLogin(c echo.Context) error {
 
 	log.Printf("[AUTH] User registered via Apple — ID: %d | Email: %s", user.ID, user.Email)
 	return c.JSON(http.StatusCreated, models.AuthResponse{Token: token, User: user})
+}
+
+type SetPushTokenReq struct {
+	PushToken string `json:"push_token"`
+}
+
+func SetPushToken(c echo.Context) error {
+	userID := c.Get("user_id").(string)
+	log.Printf("[PUSH] SetPushToken request — UserID: %s", userID)
+
+	req := new(SetPushTokenReq)
+	if err := c.Bind(req); err != nil {
+		log.Printf("[PUSH] Bind error: %v", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	}
+
+	_, err := db.DB.Exec("UPDATE users SET push_token=$1, updated_at=CURRENT_TIMESTAMP WHERE id=$2", req.PushToken, userID)
+	if err != nil {
+		log.Printf("[PUSH] Update error: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update push token"})
+	}
+
+	log.Printf("[PUSH] Push token set successfully for UserID: %s", userID)
+	return c.JSON(http.StatusOK, map[string]string{"message": "Push token set successfully"})
+}
+
+type ExpoPushMessage struct {
+	To    string `json:"to"`
+	Sound string `json:"sound,omitempty"`
+	Title string `json:"title"`
+	Body  string `json:"body"`
+}
+
+func TestPushNotification(c echo.Context) error {
+	userID := c.Get("user_id").(string)
+	log.Printf("[PUSH] TestPushNotification request — UserID: %s", userID)
+
+	var pushToken *string
+	err := db.DB.Get(&pushToken, "SELECT push_token FROM users WHERE id=$1", userID)
+	if err != nil || pushToken == nil || *pushToken == "" {
+		log.Printf("[PUSH] Token not found for UserID: %s", userID)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Push token not registered for user"})
+	}
+
+	// Send push notification via Expo
+	msg := ExpoPushMessage{
+		To:    *pushToken,
+		Sound: "default",
+		Title: "Test Notification 🌿",
+		Body:  "This is a test notification from FarmTag! Your push channel is working perfectly.",
+	}
+
+	jsonBytes, err := json.Marshal(msg)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to marshal push payload"})
+	}
+
+	resp, err := http.Post("https://exp.host/--/api/v2/push/send", "application/json", bytes.NewReader(jsonBytes))
+	if err != nil {
+		log.Printf("[PUSH] HTTP request to Expo failed: %v", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to send notification via Expo API"})
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("[PUSH] Expo API returned status: %d", resp.StatusCode)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Expo API rejected the message"})
+	}
+
+	log.Printf("[PUSH] Test push sent successfully to token for UserID: %s", userID)
+	return c.JSON(http.StatusOK, map[string]string{"message": "Test notification sent successfully!"})
 }

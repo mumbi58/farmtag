@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"farmtag/db"
@@ -57,7 +59,7 @@ func CreateAnimal(c echo.Context) error {
 	var animal models.Animal
 	query := `
 		INSERT INTO animals (farm_id, mother_id, tag_number, name, type, breed, gender, date_of_birth, photo_url)
-		VALUES ($1, NULLIF($2,'')::UUID, $3, NULLIF($4,''), $5, NULLIF($6,''), $7, NULLIF($8,'')::DATE, NULLIF($9,''))
+		VALUES ($1, NULLIF($2,'')::BIGINT, $3, NULLIF($4,''), $5, NULLIF($6,''), $7, NULLIF($8,'')::DATE, NULLIF($9,''))
 		RETURNING id, farm_id, mother_id, tag_number, name, type, breed, gender, date_of_birth, photo_url, is_sold, is_deleted, created_at, updated_at
 	`
 	err = db.DB.QueryRowx(query,
@@ -89,7 +91,22 @@ func CreateAnimal(c echo.Context) error {
 func GetAnimals(c echo.Context) error {
 	userID := c.Get("user_id").(string)
 	farmID := c.QueryParam("farm_id")
-	log.Printf("[ANIMAL] GetAnimals request — UserID: %s | FarmID: %s", userID, farmID)
+	searchQuery := c.QueryParam("q")
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
+	log.Printf("[ANIMAL] GetAnimals request — UserID: %s | FarmID: %s | Search: %s", userID, farmID, searchQuery)
+
+	page := 1
+	limit := 5
+
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		page = p
+	}
+	if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+		limit = l
+	}
+
+	offset := (page - 1) * limit
 
 	query := `
 		SELECT 
@@ -103,12 +120,26 @@ func GetAnimals(c echo.Context) error {
 		WHERE f.user_id=$1 AND a.is_deleted=false
 	`
 	args := []interface{}{userID}
+	argIdx := 2
 
 	if farmID != "" {
-		query += ` AND a.farm_id=$2`
+		query += fmt.Sprintf(" AND a.farm_id=$%d", argIdx)
 		args = append(args, farmID)
+		argIdx++
+	}
+
+	if searchQuery != "" {
+		query += fmt.Sprintf(" AND (a.tag_number ILIKE $%d OR a.name ILIKE $%d OR a.type ILIKE $%d OR a.breed ILIKE $%d)", argIdx, argIdx, argIdx, argIdx)
+		args = append(args, "%"+searchQuery+"%")
+		argIdx++
 	}
 	query += ` ORDER BY a.created_at DESC`
+
+	// Append dynamic placeholders for Limit/Offset
+	limitPlaceholder := fmt.Sprintf("$%d", len(args)+1)
+	offsetPlaceholder := fmt.Sprintf("$%d", len(args)+2)
+	query += fmt.Sprintf(" LIMIT %s OFFSET %s", limitPlaceholder, offsetPlaceholder)
+	args = append(args, limit, offset)
 
 	type AnimalWithMeta struct {
 		models.Animal
@@ -128,7 +159,7 @@ func GetAnimals(c echo.Context) error {
 		animals = []AnimalWithMeta{}
 	}
 
-	log.Printf("[ANIMAL] GetAnimals returned %d animals for UserID: %s", len(animals), userID)
+	log.Printf("[ANIMAL] GetAnimals returned %d animals for UserID: %s (page: %d, limit: %d)", len(animals), userID, page, limit)
 	return c.JSON(http.StatusOK, animals)
 }
 

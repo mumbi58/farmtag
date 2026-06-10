@@ -1,7 +1,21 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import { Platform } from "react-native";
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import Constants from "expo-constants";
 import api from "@/constants/api";
+import { initPurchases } from "@/utils/purchases";
+
+// Configure local notification handlers
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 const AuthContext = createContext({});
 
@@ -13,6 +27,60 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     loadStoredAuth();
   }, []);
+
+  useEffect(() => {
+    if (user && user.id) {
+      initPurchases(user.id);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (token) {
+      registerForPushNotificationsAsync().then(pushToken => {
+        if (pushToken) {
+          api.post("/profile/push-token", { push_token: pushToken })
+            .then(() => console.log("[PUSH] Token registered successfully on backend"))
+            .catch(err => console.log("[PUSH] Failed to register token on backend:", err.message));
+        }
+      });
+    }
+  }, [token]);
+
+  async function registerForPushNotificationsAsync() {
+    let token;
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+    }
+
+    if (Device.isDevice) {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        console.log('Failed to get push token for push notification!');
+        return;
+      }
+      const projectId = Constants?.expoConfig?.extra?.eas?.projectId || Constants?.easConfig?.projectId;
+      if (!projectId) {
+        console.log('[PUSH] Project ID not found in config. Skipping push token registration.');
+        return;
+      }
+      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+      console.log('[PUSH] Token acquired:', token);
+    } else {
+      console.log('Must use physical device for Push Notifications');
+    }
+
+    return token;
+  }
 
   const loadStoredAuth = async () => {
     try {
@@ -92,9 +160,26 @@ export function AuthProvider({ children }) {
     router.replace("/login");
   };
 
+  const updateUserFields = async (fields) => {
+    if (!user) return;
+    const updated = { ...user, ...fields };
+    await AsyncStorage.setItem("user", JSON.stringify(updated));
+    setUser(updated);
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, register, logout, loginWithGoogle, loginWithApple }}
+      value={{
+        user,
+        token,
+        loading,
+        login,
+        register,
+        logout,
+        loginWithGoogle,
+        loginWithApple,
+        updateUserFields,
+      }}
     >
       {children}
     </AuthContext.Provider>

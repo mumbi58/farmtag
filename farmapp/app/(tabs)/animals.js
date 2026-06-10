@@ -73,21 +73,21 @@ function AnimalCard({ animal, onPress }) {
 
 export default function Animals() {
   const [animals, setAnimals] = useState([]);
-  const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const PAGE_SIZE = 10;
+  const [hasMore, setHasMore] = useState(true);
 
-  const fetchAnimals = async () => {
+  const fetchAnimals = async (pageNum = 1, queryText = search) => {
     try {
-      const res = await api.get("/animals");
-      // Also fetch buying prices
+      const limit = 5;
+      const res = await api.get(`/animals?page=${pageNum}&limit=${limit}&q=${queryText}`);
       const data = res.data || [];
       setAnimals(data);
-      setFiltered(data);
-      console.log("[ANIMALS] Loaded:", data.length, "animals");
+      setPage(pageNum);
+      setHasMore(data.length === limit);
+      console.log("[ANIMALS] Loaded page:", pageNum, "with", data.length, "animals");
     } catch (e) {
       console.log("[ANIMALS] Fetch error:", e.message);
     } finally {
@@ -98,34 +98,29 @@ export default function Animals() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchAnimals();
+      fetchAnimals(1, search);
     }, [])
   );
 
   useEffect(() => {
-    let result = [...animals];
-    if (search) {
-      result = result.filter(
-        (a) =>
-          a.tag_number?.toLowerCase().includes(search.toLowerCase()) ||
-          a.name?.toLowerCase().includes(search.toLowerCase()) ||
-          a.type?.toLowerCase().includes(search.toLowerCase()) ||
-          a.breed?.toLowerCase().includes(search.toLowerCase()),
-      );
-    }
-    setFiltered(result);
-    setPage(1);
-  }, [search, animals]);
+    const delayDebounceFn = setTimeout(() => {
+      if (search !== "") {
+        setLoading(true);
+        fetchAnimals(1, search);
+      } else {
+        fetchAnimals(1, "");
+      }
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [search]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchAnimals();
-  }, []);
+    fetchAnimals(1, search);
+  }, [search]);
 
-  const paginated = filtered.slice(0, page * PAGE_SIZE);
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-
-  if (loading) {
+  if (loading && page === 1) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={Colors.primary} />
@@ -139,7 +134,7 @@ export default function Animals() {
       <View style={styles.titleRow}>
         <View>
           <Text style={styles.title}>Animal Registry</Text>
-          <Text style={styles.subtitle}>{filtered.length} animals found</Text>
+          <Text style={styles.subtitle}>Manage your livestock records</Text>
         </View>
       </View>
 
@@ -168,7 +163,7 @@ export default function Animals() {
 
       {/* List */}
       <FlatList
-        data={paginated}
+        data={animals}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <AnimalCard
@@ -194,44 +189,20 @@ export default function Animals() {
           </View>
         }
         ListFooterComponent={
-          totalPages > 1 ? (
+          (page > 1 || hasMore) ? (
             <View style={styles.pagination}>
               <TouchableOpacity
                 style={[styles.pageBtn, page === 1 && styles.pageBtnDisabled]}
-                onPress={() => setPage((p) => Math.max(1, p - 1))}
+                onPress={() => fetchAnimals(page - 1)}
                 disabled={page === 1}
               >
                 <Text style={styles.pageBtnText}>Previous</Text>
               </TouchableOpacity>
-              {Array.from(
-                { length: Math.min(totalPages, 5) },
-                (_, i) => i + 1,
-              ).map((p) => (
-                <TouchableOpacity
-                  key={p}
-                  style={[
-                    styles.pageNumber,
-                    page === p && styles.pageNumberActive,
-                  ]}
-                  onPress={() => setPage(p)}
-                >
-                  <Text
-                    style={[
-                      styles.pageNumberText,
-                      page === p && styles.pageNumberTextActive,
-                    ]}
-                  >
-                    {p}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <Text style={styles.pageIndicator}>Page {page}</Text>
               <TouchableOpacity
-                style={[
-                  styles.pageBtn,
-                  page === totalPages && styles.pageBtnDisabled,
-                ]}
-                onPress={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
+                style={[styles.pageBtn, !hasMore && styles.pageBtnDisabled]}
+                onPress={() => fetchAnimals(page + 1)}
+                disabled={!hasMore}
               >
                 <Text style={styles.pageBtnText}>Next</Text>
               </TouchableOpacity>
@@ -344,7 +315,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 6,
+    gap: 12,
     paddingVertical: 16,
   },
   pageBtn: {
@@ -357,6 +328,12 @@ const styles = StyleSheet.create({
   },
   pageBtnDisabled: { opacity: 0.4 },
   pageBtnText: { fontSize: 13, fontWeight: "600", color: Colors.text },
+  pageIndicator: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.textSecondary,
+    marginHorizontal: 8,
+  },
   pageNumber: {
     width: 36,
     height: 36,

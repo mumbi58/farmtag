@@ -86,7 +86,7 @@ export default function FarmDetailsPage() {
             try {
               await api.delete(`/farms/${id}`);
               Alert.alert("Archived", "Farm has been successfully archived.", [
-                { text: "OK", onPress: () => router.replace("/(tabs)/farms") }
+                { text: "OK", onPress: () => router.replace("/farms") }
               ]);
             } catch (e) {
               Alert.alert("Error", "Failed to archive farm.");

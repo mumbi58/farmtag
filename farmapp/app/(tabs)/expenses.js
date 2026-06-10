@@ -84,16 +84,22 @@ export default function Expenses() {
   const [period, setPeriod] = useState("monthly");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  const fetchExpenses = async () => {
+  const fetchExpenses = async (pageNum = 1) => {
     try {
+      const limit = 5;
       const [summaryRes, expensesRes] = await Promise.all([
         api.get(`/expenses/summary?period=${period}`),
-        api.get(`/expenses?period=${period}`),
+        api.get(`/expenses?period=${period}&page=${pageNum}&limit=${limit}`),
       ]);
       setSummary(summaryRes.data);
-      setExpenses(expensesRes.data || []);
-      console.log("[EXPENSES] Loaded summary:", summaryRes.data);
+      const data = expensesRes.data || [];
+      setExpenses(data);
+      setPage(pageNum);
+      setHasMore(data.length === limit);
+      console.log("[EXPENSES] Loaded page:", pageNum, "with", data.length, "expenses");
     } catch (e) {
       console.log("[EXPENSES] Fetch error:", e.message);
     } finally {
@@ -103,12 +109,12 @@ export default function Expenses() {
   };
 
   useEffect(() => {
-    fetchExpenses();
+    fetchExpenses(1);
   }, [period]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchExpenses();
+    fetchExpenses(1);
   }, [period]);
 
   if (loading) {
@@ -210,13 +216,32 @@ export default function Expenses() {
             <Text style={styles.emptyText}>No expenses recorded</Text>
           </View>
         ) : (
-          expenses
-            .slice(0, 10)
-            .map((expense) => (
-              <ExpenseItem key={expense.id} expense={expense} />
-            ))
+          expenses.map((expense) => (
+            <ExpenseItem key={expense.id} expense={expense} />
+          ))
         )}
       </View>
+
+      {/* Pagination Controls */}
+      {(page > 1 || hasMore) && (
+        <View style={styles.pagination}>
+          <TouchableOpacity
+            style={[styles.pageBtn, page === 1 && styles.pageBtnDisabled]}
+            onPress={() => fetchExpenses(page - 1)}
+            disabled={page === 1}
+          >
+            <Text style={styles.pageBtnText}>Previous</Text>
+          </TouchableOpacity>
+          <Text style={styles.pageIndicator}>Page {page}</Text>
+          <TouchableOpacity
+            style={[styles.pageBtn, !hasMore && styles.pageBtnDisabled]}
+            onPress={() => fetchExpenses(page + 1)}
+            disabled={!hasMore}
+          >
+            <Text style={styles.pageBtnText}>Next</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -370,4 +395,28 @@ const styles = StyleSheet.create({
   empty: { alignItems: "center", paddingVertical: 40 },
   emptyEmoji: { fontSize: 40, marginBottom: 8 },
   emptyText: { fontSize: 15, color: Colors.textSecondary },
+  pagination: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 16,
+    marginTop: 8,
+  },
+  pageBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: Colors.white,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  pageBtnDisabled: { opacity: 0.4 },
+  pageBtnText: { fontSize: 13, fontWeight: "600", color: Colors.text },
+  pageIndicator: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: Colors.textSecondary,
+    marginHorizontal: 8,
+  },
 });

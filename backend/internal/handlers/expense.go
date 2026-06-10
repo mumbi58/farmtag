@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"farmtag/db"
@@ -50,7 +52,21 @@ func GetExpenses(c echo.Context) error {
 	userID := c.Get("user_id").(string)
 	farmID := c.QueryParam("farm_id")
 	period := c.QueryParam("period") // monthly, yearly, all
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
 	log.Printf("[EXPENSE] GetExpenses — UserID: %s | FarmID: %s | Period: %s", userID, farmID, period)
+
+	page := 1
+	limit := 5
+
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		page = p
+	}
+	if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+		limit = l
+	}
+
+	offset := (page - 1) * limit
 
 	query := `
 		SELECT e.* FROM expenses e
@@ -75,6 +91,12 @@ func GetExpenses(c echo.Context) error {
 
 	query += ` ORDER BY e.expense_date DESC`
 
+	// Append dynamic placeholders for Limit/Offset
+	limitPlaceholder := fmt.Sprintf("$%d", len(args)+1)
+	offsetPlaceholder := fmt.Sprintf("$%d", len(args)+2)
+	query += fmt.Sprintf(" LIMIT %s OFFSET %s", limitPlaceholder, offsetPlaceholder)
+	args = append(args, limit, offset)
+
 	var expenses []models.Expense
 	err := db.DB.Select(&expenses, query, args...)
 	if err != nil {
@@ -82,7 +104,7 @@ func GetExpenses(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch expenses"})
 	}
 
-	log.Printf("[EXPENSE] GetExpenses returned %d records", len(expenses))
+	log.Printf("[EXPENSE] GetExpenses returned %d records (page: %d, limit: %d)", len(expenses), page, limit)
 	return c.JSON(http.StatusOK, expenses)
 }
 

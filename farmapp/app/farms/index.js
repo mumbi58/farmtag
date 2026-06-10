@@ -7,11 +7,10 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Modal,
-  Pressable,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Colors } from "@/constants/colors";
 import api from "@/constants/api";
 
@@ -80,16 +79,22 @@ export default function Farms() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [totalAnimals, setTotalAnimals] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
-  const fetchFarms = async () => {
+  const fetchFarms = async (pageNum = 1) => {
     try {
+      const limit = 5;
       const [farmsRes, dashRes] = await Promise.all([
-        api.get("/farms"),
+        api.get(`/farms?page=${pageNum}&limit=${limit}`),
         api.get("/dashboard"),
       ]);
-      setFarms(farmsRes.data || []);
+      const data = farmsRes.data || [];
+      setFarms(data);
+      setPage(pageNum);
+      setHasMore(data.length === limit);
       setTotalAnimals(dashRes.data?.total_animals || 0);
-      console.log("[FARMS] Loaded:", farmsRes.data?.length, "farms");
+      console.log("[FARMS] Loaded page", pageNum, "with", data.length, "farms");
     } catch (e) {
       console.log("[FARMS] Fetch error:", e.message);
     } finally {
@@ -98,16 +103,18 @@ export default function Farms() {
     }
   };
 
-  useEffect(() => {
-    fetchFarms();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchFarms(1);
+    }, [])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchFarms();
+    fetchFarms(1);
   }, []);
 
-  if (loading) {
+  if (loading && page === 1) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={Colors.primary} />
@@ -116,7 +123,15 @@ export default function Farms() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={22} color={Colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>My Farms</Text>
+      </View>
+
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
@@ -155,28 +170,53 @@ export default function Farms() {
           ))
         )}
 
+        {/* Pagination Controls */}
+        {(page > 1 || hasMore) && (
+          <View style={styles.pagination}>
+            <TouchableOpacity
+              style={[styles.pageBtn, page === 1 && styles.pageBtnDisabled]}
+              onPress={() => fetchFarms(page - 1)}
+              disabled={page === 1}
+            >
+              <Ionicons name="chevron-back" size={16} color={Colors.text} />
+              <Text style={styles.pageBtnText}>Prev</Text>
+            </TouchableOpacity>
+            <Text style={styles.pageIndicator}>Page {page}</Text>
+            <TouchableOpacity
+              style={[styles.pageBtn, !hasMore && styles.pageBtnDisabled]}
+              onPress={() => fetchFarms(page + 1)}
+              disabled={!hasMore}
+            >
+              <Text style={styles.pageBtnText}>Next</Text>
+              <Ionicons name="chevron-forward" size={16} color={Colors.text} />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Overall Summary */}
         <View style={styles.summarySection}>
           <Text style={styles.sectionTitle}>Overall Summary</Text>
-          <View
-            style={[styles.summaryCard, { backgroundColor: Colors.green100 }]}
-          >
-            <Text style={styles.summaryLabel}>Total Farms</Text>
-            <Text style={styles.summaryValue}>{farms.length}</Text>
-          </View>
           <View style={[styles.summaryCard, { backgroundColor: "#EEF2FF" }]}>
-            <Text style={styles.summaryLabel}>Total Animals</Text>
+            <Text style={styles.summaryLabel}>Total Animals Registered</Text>
             <Text style={styles.summaryValue}>{totalAnimals}</Text>
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
+  backBtn: {
+    width: 38, height: 38, borderRadius: 12,
+    backgroundColor: Colors.white, justifyContent: "center", alignItems: "center",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06, shadowRadius: 3, elevation: 2,
+  },
+  headerTitle: { fontSize: 22, fontWeight: "800", color: Colors.text },
   content: { padding: 16, paddingBottom: 32 },
   addButton: {
     flexDirection: "row",
@@ -201,12 +241,12 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   farmImage: {
-    height: 140,
+    height: 120,
     backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
   },
-  farmEmoji: { fontSize: 64 },
+  farmEmoji: { fontSize: 56 },
   farmInfo: { padding: 16 },
   farmName: { fontSize: 20, fontWeight: "800", color: Colors.text },
   farmLocation: {
@@ -233,7 +273,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 14,
   },
-  summarySection: { marginTop: 8 },
+  summarySection: { marginTop: 16 },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",
@@ -251,4 +291,27 @@ const styles = StyleSheet.create({
   emptyEmoji: { fontSize: 48, marginBottom: 12 },
   emptyText: { fontSize: 16, fontWeight: "700", color: Colors.text },
   emptySubText: { fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
+  pagination: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  pageBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: Colors.white,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 4,
+  },
+  pageBtnDisabled: { opacity: 0.4 },
+  pageBtnText: { fontSize: 13, fontWeight: "600", color: Colors.text },
+  pageIndicator: { fontSize: 14, fontWeight: "700", color: Colors.textSecondary },
 });

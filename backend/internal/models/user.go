@@ -15,6 +15,7 @@ type User struct {
     ResetTokenExpires  *time.Time `db:"reset_token_expires" json:"-"`
     GoogleID           *string    `db:"google_id" json:"google_id,omitempty"`
     AppleID            *string    `db:"apple_id" json:"apple_id,omitempty"`
+    PushToken          *string    `db:"push_token" json:"push_token,omitempty"`
     CreatedAt          time.Time  `db:"created_at" json:"created_at"`
     UpdatedAt          time.Time  `db:"updated_at" json:"updated_at"`
 }

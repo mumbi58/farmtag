@@ -50,6 +50,13 @@ function Header() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.menuItem}
+              onPress={() => { setMenuVisible(false); router.push("/farms"); }}
+            >
+              <Ionicons name="leaf-outline" size={18} color={Colors.text} />
+              <Text style={styles.menuItemText}>My Farms</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.menuItem}
               onPress={() => { setMenuVisible(false); router.push("/settings"); }}
             >
               <Ionicons name="settings-outline" size={18} color={Colors.text} />
@@ -72,6 +79,7 @@ function Header() {
 }
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
   return (
     <Tabs
       screenOptions={{
@@ -80,8 +88,8 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: Colors.white,
           borderTopColor: Colors.border,
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
         header: () => <Header />,
@@ -91,7 +99,6 @@ export default function TabLayout() {
       <Tabs.Screen name="animals" options={{ title: "Animals", tabBarIcon: ({ color, size }) => <Ionicons name="paw-outline" size={size} color={color} /> }} />
       <Tabs.Screen name="expenses" options={{ title: "Expenses", tabBarIcon: ({ color, size }) => <Ionicons name="cash-outline" size={size} color={color} /> }} />
       <Tabs.Screen name="reports" options={{ title: "Reports", tabBarIcon: ({ color, size }) => <Ionicons name="bar-chart-outline" size={size} color={color} /> }} />
-      <Tabs.Screen name="farms" options={{ title: "Farms", tabBarIcon: ({ color, size }) => <Ionicons name="leaf-outline" size={size} color={color} /> }} />
     </Tabs>
   );
 }

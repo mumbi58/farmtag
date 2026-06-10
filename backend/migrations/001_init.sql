@@ -122,3 +122,6 @@ CREATE INDEX IF NOT EXISTS idx_health_records_animal_id ON health_records(animal
 -- Social Logins support
 ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255) UNIQUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS apple_id VARCHAR(255) UNIQUE;
+
+-- Push Notifications support
+ALTER TABLE users ADD COLUMN IF NOT EXISTS push_token VARCHAR(255);

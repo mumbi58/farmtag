@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"farmtag/db"
@@ -64,14 +65,29 @@ func GetFarms(c echo.Context) error {
 	userID := c.Get("user_id").(string)
 	log.Printf("[FARM] GetFarms request — UserID: %s", userID)
 
+	pageStr := c.QueryParam("page")
+	limitStr := c.QueryParam("limit")
+
+	page := 1
+	limit := 5
+
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		page = p
+	}
+	if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+		limit = l
+	}
+
+	offset := (page - 1) * limit
+
 	var farms []models.Farm
-	err := db.DB.Select(&farms, "SELECT * FROM farms WHERE user_id=$1 AND is_active=true ORDER BY created_at DESC", userID)
+	err := db.DB.Select(&farms, "SELECT * FROM farms WHERE user_id=$1 AND is_active=true ORDER BY created_at DESC LIMIT $2 OFFSET $3", userID, limit, offset)
 	if err != nil {
 		log.Printf("[FARM] GetFarms query error: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to fetch farms"})
 	}
 
-	log.Printf("[FARM] GetFarms returned %d farms for UserID: %s", len(farms), userID)
+	log.Printf("[FARM] GetFarms returned %d farms for UserID: %s (page: %d, limit: %d)", len(farms), userID, page, limit)
 	return c.JSON(http.StatusOK, farms)
 }
 
